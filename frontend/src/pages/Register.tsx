@@ -11,18 +11,34 @@ import { LGA, Ward, PollingUnit, RegisterRequest } from '../types';
 import toast from 'react-hot-toast';
 
 const registerSchema = z.object({
-  first_name: z.string().min(2, 'First name required'),
-  last_name: z.string().min(2, 'Last name required'),
-  email: z.string().email('Valid email required'),
-  phone: z.string().optional(),
+  first_name: z.string().trim().min(2, 'First name required'),
+  last_name: z.string().trim().min(2, 'Last name required'),
+  email: z.string().trim().email('Valid email required').optional().or(z.literal('')),
+  phone: z.string().trim().optional().or(z.literal('')),
   password: z.string().min(8, 'Min 8 characters'),
   confirm_password: z.string(),
   requested_role: z.string().min(1, 'Select a role'),
   lga_id: z.string().optional(),
   ward_id: z.string().optional(),
   polling_unit_id: z.string().optional(),
-  nin: z.string().optional(),
-}).refine(d => d.password === d.confirm_password, { message: 'Passwords do not match', path: ['confirm_password'] });
+  nin: z.string().trim().optional().or(z.literal('')),
+}).superRefine((d, ctx) => {
+  if (!d.email && !d.phone) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Provide an email or phone number', path: ['email'] });
+  }
+  if (d.password !== d.confirm_password) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Passwords do not match', path: ['confirm_password'] });
+  }
+  if (['lga_coordinator', 'ward_officer', 'pu_agent'].includes(d.requested_role) && !d.lga_id) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Select an LGA', path: ['lga_id'] });
+  }
+  if (['ward_officer', 'pu_agent'].includes(d.requested_role) && !d.ward_id) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Select a ward', path: ['ward_id'] });
+  }
+  if (d.requested_role === 'pu_agent' && !d.polling_unit_id) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Select a polling unit', path: ['polling_unit_id'] });
+  }
+});
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
@@ -117,14 +133,15 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="label-text">Email</label>
-              <input {...register('email')} type="email" className="input-field" placeholder="agent@example.com" />
+              <label className="label-text">Email <span className="text-text-muted font-normal">(or phone)</span></label>
+              <input {...register('email')} type="email" className="input-field" placeholder="agent@example.com" autoComplete="email" />
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
             </div>
 
             <div>
-              <label className="label-text">Phone (optional)</label>
-              <input {...register('phone')} className="input-field" placeholder="+234..." />
+              <label className="label-text">Phone <span className="text-text-muted font-normal">(or email)</span></label>
+              <input {...register('phone')} type="tel" className="input-field" placeholder="+234 800 000 0000" autoComplete="tel" />
+              {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone.message}</p>}
             </div>
 
             <div>
@@ -149,6 +166,7 @@ export default function RegisterPage() {
                   <option value="">Select LGA...</option>
                   {lgaData?.data?.data?.map((lga: LGA) => <option key={lga.id} value={lga.id}>{lga.name}</option>)}
                 </select>
+                {errors.lga_id && <p className="text-red-400 text-xs mt-1">{errors.lga_id.message}</p>}
               </div>
             )}
 
@@ -159,6 +177,7 @@ export default function RegisterPage() {
                   <option value="">Select Ward...</option>
                   {wardData?.data?.data?.map((w: Ward) => <option key={w.id} value={w.id}>{w.name}</option>)}
                 </select>
+                {errors.ward_id && <p className="text-red-400 text-xs mt-1">{errors.ward_id.message}</p>}
               </div>
             )}
 
@@ -169,6 +188,7 @@ export default function RegisterPage() {
                   <option value="">Select PU...</option>
                   {puData?.data?.data?.map((pu: PollingUnit) => <option key={pu.id} value={pu.id}>{pu.name} ({pu.inec_pu_code})</option>)}
                 </select>
+                {errors.polling_unit_id && <p className="text-red-400 text-xs mt-1">{errors.polling_unit_id.message}</p>}
               </div>
             )}
 

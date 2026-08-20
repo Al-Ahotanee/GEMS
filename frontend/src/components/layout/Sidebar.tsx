@@ -61,7 +61,7 @@ const navItems: NavItem[] = [
   { label: 'Elections', to: '/app/admin/elections', icon: Vote, roles: ['super_admin'], section: 'Admin' },
   { label: 'Audit Log', to: '/app/admin/audit', icon: ShieldCheck, roles: ['super_admin'], section: 'Admin' },
   { label: 'Anti-Rigging', to: '/app/admin/anti-rigging', icon: ShieldAlert, roles: ['super_admin', 'state_coordinator'], section: 'Admin' },
-  { label: 'Reports', to: '/app/admin/reports', icon: FileText, roles: ['super_admin'], section: 'Admin' },
+  { label: 'Reports', to: '/app/admin/reports', icon: FileText, roles: ['super_admin', 'state_coordinator', 'lga_coordinator'], section: 'Admin' },
 
   // Account — all authenticated users
   { label: 'Profile', to: '/app/profile', icon: UserCircle, roles: ['*'] },

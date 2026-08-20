@@ -15,7 +15,7 @@ export default function AdminElectionDetail() {
   const queryClient = useQueryClient();
 
   const [editMode, setEditMode] = useState(false);
-  const [electionForm, setElectionForm] = useState({ title: '', election_type: '', election_date: '', description: '', status: '' });
+  const [electionForm, setElectionForm] = useState({ title: '', election_type: '', election_date: '', election_year: new Date().getFullYear(), description: '', status: '' });
   
   const [showCandidateModal, setShowCandidateModal] = useState(false);
   const [candidateForm, setCandidateForm] = useState({ id: '', full_name: '', party_name: '', party_code: '' });
@@ -34,6 +34,7 @@ export default function AdminElectionDetail() {
         title: election.title || '',
         election_type: election.election_type || '',
         election_date: election.election_date || '',
+        election_year: Number(election.election_year || new Date().getFullYear()),
         description: election.description || '',
         status: election.status || ''
       });
@@ -131,11 +132,15 @@ export default function AdminElectionDetail() {
                   <input type="date" value={electionForm.election_date} onChange={e => setElectionForm({ ...electionForm, election_date: e.target.value })} className="input-field" />
                 </div>
                 <div>
+                  <label className="label-text">Election year</label>
+                  <input type="number" min="1900" max="2200" value={electionForm.election_year} onChange={e => setElectionForm({ ...electionForm, election_year: Number(e.target.value) })} className="input-field" />
+                </div>
+                <div>
                   <label className="label-text">Description</label>
                   <textarea value={electionForm.description} onChange={e => setElectionForm({ ...electionForm, description: e.target.value })} className="input-field" rows={3} />
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button onClick={() => setEditMode(false)} className="flex-1 btn-secondary text-sm py-2">Cancel</button>
+                  <button onClick={() => setEditMode(false)} className="flex-1 btn-outline text-sm py-2">Cancel</button>
                   <button onClick={() => updateElectionMut.mutate(electionForm)} className="flex-1 btn-primary text-sm py-2" disabled={updateElectionMut.isPending}>
                     Save Changes
                   </button>
@@ -226,7 +231,7 @@ export default function AdminElectionDetail() {
               </div>
             </div>
             <div className="flex gap-3 mt-8">
-              <button onClick={() => setShowCandidateModal(false)} className="flex-1 btn-secondary">Cancel</button>
+              <button onClick={() => setShowCandidateModal(false)} className="flex-1 btn-outline">Cancel</button>
               <button onClick={() => saveCandidateMut.mutate(candidateForm)} disabled={saveCandidateMut.isPending} className="flex-1 btn-primary">
                 {saveCandidateMut.isPending ? 'Saving...' : 'Save Candidate'}
               </button>

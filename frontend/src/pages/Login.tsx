@@ -11,8 +11,13 @@ import { authApi } from '../services/api';
 import toast from 'react-hot-toast';
 
 const loginSchema = z.object({
-  email: z.string().email('Valid email required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().trim().optional().or(z.literal('')),
+  phone: z.string().trim().optional().or(z.literal('')),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+}).superRefine((d, ctx) => {
+  if (!d.email && !d.phone) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Enter your email or phone number', path: ['email'] });
+  }
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -30,7 +35,9 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      const response = await authApi.login(data);
+      const identifier = data.email || data.phone || '';
+      const payload = identifier.includes('@') ? { email: identifier, password: data.password } : { phone: identifier, password: data.password };
+      const response = await authApi.login(payload);
       if (response.data.success) {
         dispatch(setCredentials(response.data.data));
         toast.success('Welcome back!');
@@ -82,15 +89,16 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
-              <label className="label-text">Email Address</label>
+              <label className="label-text">Email or phone number</label>
               <input
                 {...register('email')}
-                type="email"
+                type="text"
                 className="input-field"
-                placeholder="admin@gsem.ng"
-                autoComplete="email"
+                placeholder="admin@gsem.ng or +234 800 000 0000"
+                autoComplete="username"
               />
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
+              <input {...register('phone')} type="hidden" />
             </div>
 
             <div>

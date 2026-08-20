@@ -3,10 +3,8 @@ import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { adminApi } from '../services/api';
-import { User } from '../types';
+import { RegistrationApplication } from '../types';
 import StatusBadge from '../components/common/StatusBadge';
-
-type AppUser = User & { requested_role?: string; nin?: string; lga_name?: string; ward_name?: string };
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import PageHeader from '../components/common/PageHeader';
 import toast from 'react-hot-toast';
@@ -14,7 +12,7 @@ import toast from 'react-hot-toast';
 export default function AdminApplicationsPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('pending');
-  const [selectedApp, setSelectedApp] = useState<AppUser | null>(null);
+  const [selectedApp, setSelectedApp] = useState<RegistrationApplication | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const queryClient = useQueryClient();
 
@@ -29,7 +27,7 @@ export default function AdminApplicationsPage() {
     },
   });
 
-  const apps = data?.data?.data || [];
+  const apps = (data?.data?.data || []) as RegistrationApplication[];
   const pagination = data?.data?.pagination;
 
   return (
@@ -43,7 +41,7 @@ export default function AdminApplicationsPage() {
       {isLoading ? <LoadingSpinner /> : (
         <div className="glass-card overflow-hidden">
           <table className="w-full"><thead><tr><th className="table-header">Name</th><th className="table-header">Email</th><th className="table-header text-center">Role</th><th className="table-header text-center">LGA</th><th className="table-header text-center">Status</th><th className="table-header text-center">Actions</th></tr></thead>
-            <tbody>{apps.map((a: AppUser) => (
+            <tbody>{apps.map((a) => (
               <tr key={a.id} className="hover:bg-dark-surface-2 transition">
                 <td className="table-cell text-text-primary text-sm">{a.first_name} {a.last_name}</td><td className="table-cell text-sm">{a.email}</td>
                 <td className="table-cell text-center text-xs capitalize">{a.requested_role?.replace(/_/g, ' ')}</td><td className="table-cell text-center text-sm">{a.lga_name || '—'}</td>

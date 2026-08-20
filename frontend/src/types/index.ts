@@ -375,15 +375,16 @@ export interface AuditLog {
 // ==================== REGISTRATION ====================
 export interface RegistrationApplication {
   id: number;
-  email: string;
-  phone: string;
+  user_id: number | null;
+  email: string | null;
+  phone: string | null;
   first_name: string;
   last_name: string;
   requested_role: UserRole;
   lga_id: number | null;
   ward_id: number | null;
   polling_unit_id: number | null;
-  nin: string;
+  nin: string | null;
   accreditation_doc_url: string | null;
   status: 'pending' | 'approved' | 'rejected';
   reviewed_by: number | null;

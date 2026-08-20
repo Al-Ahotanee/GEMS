@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 
 export default function AdminElectionsPage() {
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ title: '', election_type: 'gubernatorial', election_date: '', description: '' });
+  const [form, setForm] = useState({ title: '', election_type: 'gubernatorial', election_date: '', election_year: new Date().getFullYear(), description: '' });
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({ queryKey: ['elections'], queryFn: () => electionApi.listElections() });
@@ -20,7 +20,7 @@ export default function AdminElectionsPage() {
 
   const createMut = useMutation({
     mutationFn: (d: typeof form) => electionApi.createElection(d),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['elections'] }); setShowCreate(false); toast.success('Election created'); setForm({ title: '', election_type: 'gubernatorial', election_date: '', description: '' }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['elections'] }); setShowCreate(false); toast.success('Election created'); setForm({ title: '', election_type: 'gubernatorial', election_date: '', election_year: new Date().getFullYear(), description: '' }); },
     onError: (e: unknown) => {
       const err = e as { response?: { data?: { message?: string } } };
       toast.error(err.response?.data?.message || 'Failed');
@@ -38,6 +38,7 @@ export default function AdminElectionsPage() {
             <div className="md:col-span-2"><label className="label-text">Title</label><input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="input-field" placeholder="2027 Gubernatorial Election" /></div>
             <div><label className="label-text">Type</label><select value={form.election_type} onChange={e => setForm({ ...form, election_type: e.target.value })} className="input-field"><option value="gubernatorial">Gubernatorial</option><option value="presidential">Presidential</option><option value="senatorial">Senatorial</option><option value="house_of_reps">House of Reps</option><option value="state_assembly">State Assembly</option><option value="local_government">Local Government</option></select></div>
             <div><label className="label-text">Date</label><input type="date" value={form.election_date} onChange={e => setForm({ ...form, election_date: e.target.value })} className="input-field" /></div>
+            <div><label className="label-text">Election year</label><input type="number" min="1900" max="2200" value={form.election_year} onChange={e => setForm({ ...form, election_year: Number(e.target.value) })} className="input-field" /></div>
             <div className="md:col-span-2"><label className="label-text">Description</label><textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="input-field" rows={2} /></div>
           </div>
           <button onClick={() => createMut.mutate(form)} className="btn-primary mt-4">Create</button>

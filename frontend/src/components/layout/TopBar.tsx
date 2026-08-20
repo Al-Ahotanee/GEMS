@@ -19,6 +19,8 @@ import { RootState } from '../../store';
 import { toggleSidebar } from '../../store/uiSlice';
 import { logout } from '../../store/authSlice';
 import { offlineDb } from '../../lib/offlineDb';
+import { useQuery } from '@tanstack/react-query';
+import { notificationsApi } from '../../services/api';
 
 const routeTitleMap: Record<string, string> = {
   '/app/dashboard': 'Dashboard',
@@ -60,7 +62,14 @@ function TopBar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const pendingSyncCount = useLiveQuery(() => offlineDb.offlineResults.where('synced').equals(0).count()) || 0;
-  const unreadCount = 3; // Will be wired to real notification state
+  const { data: unreadResponse } = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: () => notificationsApi.getUnreadCount(),
+    enabled: Boolean(user?.id && isOnline),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  const unreadCount = Number(unreadResponse?.data?.data?.count || 0);
 
   const pageTitle = getPageTitle(location.pathname);
 
@@ -218,7 +227,7 @@ function TopBar() {
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-dark-surface-3 transition-colors"
                     >
                       <Settings className="w-4 h-4" />
-                      Settings
+                      Account settings
                     </button>
                   </div>
 
