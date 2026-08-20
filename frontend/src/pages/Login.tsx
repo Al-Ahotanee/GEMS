@@ -54,11 +54,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-dark-bg flex items-center justify-center px-4 relative overflow-hidden">
       {/* Animated background */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-500/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1.5s' }} />
+      <div className="absolute inset-0 atlas-grid">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-200/35 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-yellow-200/30 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1.5s' }} />
         <div className="absolute inset-0" style={{
-          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(26,86,50,0.15) 1px, transparent 0)',
+          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(49,89,138,0.16) 1px, transparent 0)',
           backgroundSize: '40px 40px'
         }} />
       </div>
@@ -72,19 +72,19 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+            <div className="w-12 h-12 bg-primary-700 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-900/15">
               <Shield className="w-7 h-7 text-white" />
             </div>
-            <h1 className="font-display text-4xl font-bold text-accent-500">GSEM</h1>
+            <h1 className="font-display text-4xl font-semibold text-primary-800">GSEM</h1>
           </div>
           <p className="text-text-muted text-sm">Gombe State Election Monitor</p>
-          <p className="text-accent-500/80 text-xs mt-1 font-medium tracking-wide">
+          <p className="text-primary-600 text-xs mt-1 font-bold tracking-[.08em] uppercase">
             Counting Every Vote. Protecting Every Voice.
           </p>
         </div>
 
         {/* Login Card */}
-        <div className="glass-card-accent p-8">
+        <div className="surface-elevated p-8 sm:p-9">
           <h2 className="font-display text-xl font-semibold text-text-primary mb-6">Sign In</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -127,7 +127,7 @@ export default function LoginPage() {
                 <input type="checkbox" className="w-4 h-4 bg-dark-surface-2 border-dark-border rounded" />
                 Remember me
               </label>
-              <Link to="/forgot-password" className="text-sm text-accent-500 hover:text-accent-400 transition">
+              <Link to="/forgot-password" className="text-sm text-primary-700 hover:text-primary-900 font-bold transition">
                 Forgot password?
               </Link>
             </div>
@@ -151,7 +151,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-text-muted text-sm">
               Don't have an account?{' '}
-              <Link to="/register" className="text-accent-500 hover:text-accent-400 font-medium transition">
+              <Link to="/register" className="text-primary-700 hover:text-primary-900 font-bold transition">
                 Register as an agent
               </Link>
             </p>
@@ -162,7 +162,7 @@ export default function LoginPage() {
         <div className="text-center mt-6">
           <Link
             to="/situation-room"
-            className="text-primary-300 hover:text-accent-500 text-sm transition flex items-center justify-center gap-2"
+            className="text-primary-700 hover:text-primary-900 text-sm font-bold transition flex items-center justify-center gap-2"
           >
             <Vote className="w-4 h-4" />
             View Live Situation Room

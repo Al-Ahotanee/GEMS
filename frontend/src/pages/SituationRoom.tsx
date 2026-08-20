@@ -1,3 +1,4 @@
+/* Quiet Atlas: a cloud-white public operations map with cobalt wayfinding and moss live-status signals. */
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -49,7 +50,7 @@ const renderActiveShape = (props: any) => {
 
   return (
     <g>
-      <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="font-bold text-xl">
+      <text x={cx} y={cy} dy={8} textAnchor="middle" fill="#183f73" className="font-bold text-xl">
         {payload.party_code}
       </text>
       <Sector
@@ -72,8 +73,8 @@ const renderActiveShape = (props: any) => {
       />
       <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
       <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#fff" className="font-mono text-sm">{`${value.toLocaleString()}`}</text>
-      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#9ca3af" className="text-xs">
+      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#183f73" className="font-mono text-sm">{`${value.toLocaleString()}`}</text>
+      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#607186" className="text-xs">
         {`(${(percent * 100).toFixed(1)}%)`}
       </text>
     </g>
@@ -160,29 +161,25 @@ export default function SituationRoomPage() {
   const margin = topCandidates.length > 1 ? topCandidates[0].total_votes - topCandidates[1].total_votes : 0;
 
   return (
-    <div className="min-h-screen bg-[#050806] text-[#e8f5ee] font-sans selection:bg-accent-500/30">
-      {/* Dynamic Background Glows */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary-900/20 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent-900/10 blur-[120px]" />
-      </div>
+    <div className="min-h-screen bg-dark-bg text-text-primary font-sans selection:bg-primary-100 atlas-grid">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0"><div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary-100/60 blur-[120px]" /><div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent-100/55 blur-[120px]" /></div>
 
       {/* Header */}
-      <div className="bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-dark-surface/90 backdrop-blur-xl border-b border-dark-border sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-600 to-primary-900 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20 ring-1 ring-white/10">
+            <div className="w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-900/15">
               <Shield className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">
+              <h1 className="font-display text-2xl font-semibold text-primary-800 tracking-tight">
                 SITUATION ROOM
               </h1>
-              <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+              <div className="flex items-center gap-2 text-xs font-mono text-text-muted">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-accent-50 text-accent-700 border border-accent-200">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-400 opacity-60"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-500"></span>
                   </span>
                   LIVE FEED
                 </div>
@@ -193,10 +190,10 @@ export default function SituationRoomPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button onClick={handleShare} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all text-sm font-medium backdrop-blur-md">
+            <button onClick={handleShare} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-dark-surface-2 border border-dark-border hover:border-primary-300 hover:bg-primary-50 transition-all text-sm font-bold text-text-secondary">
               <Share2 className="w-4 h-4" /> Share
             </button>
-            <Link to="/login" className="flex-1 sm:flex-none text-center bg-white text-black hover:bg-gray-200 px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:shadow-[0_0_25px_rgba(255,255,255,0.5)]">
+            <Link to="/login" className="btn-primary flex-1 sm:flex-none text-center px-5 py-2.5">
               Agent Login
             </Link>
           </div>
@@ -206,41 +203,41 @@ export default function SituationRoomPage() {
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6 relative z-10">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32 space-y-4">
-            <div className="w-16 h-16 border-4 border-white/10 border-t-white rounded-full animate-spin" />
-            <p className="text-gray-400 font-mono animate-pulse">Initializing Data Stream...</p>
+            <div className="w-16 h-16 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin" />
+            <p className="text-text-muted font-mono animate-pulse">Initializing Data Stream...</p>
           </div>
         ) : !room || !currentViewData ? (
-          <div className="text-center py-20 text-gray-500">No election data currently streaming</div>
+          <div className="text-center py-20 text-text-muted">No election data currently streaming</div>
         ) : (
           <AnimatePresence mode="wait">
             <motion.div key={selectedLgaId || 'state'} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4 }} className="space-y-6">
               
               {/* Context Bar */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 shadow-2xl">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 surface-elevated p-5 sm:p-6">
                 <div>
-                  <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+                  <h2 className="font-display text-3xl font-semibold tracking-tight text-text-primary flex items-center gap-3">
                     {currentViewData.title}
                     {selectedLgaId && (
-                      <button onClick={() => setSelectedLgaId(null)} className="text-xs font-medium bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full transition-colors border border-white/10">
+                      <button onClick={() => setSelectedLgaId(null)} className="text-xs font-bold bg-primary-50 hover:bg-primary-100 text-primary-700 px-3 py-1 rounded-full transition-colors border border-primary-200">
                         Clear Filter ✕
                       </button>
                     )}
                   </h2>
-                  <p className="text-gray-400 text-sm flex items-center gap-2 mt-1">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  <p className="text-text-muted text-sm flex items-center gap-2 mt-2">
+                    <CheckCircle className="w-4 h-4 text-accent-600" />
                     Displaying officially verified EC8A results
                   </p>
                 </div>
-                <div className="flex items-center gap-3 bg-black/40 rounded-xl p-1 border border-white/5">
-                  <Filter className="w-4 h-4 text-gray-400 ml-3" />
+                <div className="flex items-center gap-3 bg-dark-surface-2 rounded-xl p-1 border border-dark-border">
+                  <Filter className="w-4 h-4 text-primary-600 ml-3" />
                   <select 
-                    className="bg-transparent text-white pl-2 pr-8 py-2 outline-none cursor-pointer appearance-none font-medium hover:text-gray-200 transition-colors"
+                    className="bg-transparent text-text-primary pl-2 pr-8 py-2 outline-none cursor-pointer appearance-none font-bold hover:text-primary-700 transition-colors"
                     value={selectedLgaId || ''}
                     onChange={(e) => setSelectedLgaId(e.target.value ? Number(e.target.value) : null)}
                   >
-                    <option value="" className="bg-gray-900">Filter by LGA</option>
+                    <option value="" className="bg-white">Filter by LGA</option>
                     {sortedLgas.map((l: LGADashboardSummary) => (
-                      <option key={l.lga_id} value={l.lga_id} className="bg-gray-900">{l.lga_name} LGA</option>
+                      <option key={l.lga_id} value={l.lga_id} className="bg-white">{l.lga_name} LGA</option>
                     ))}
                   </select>
                 </div>
@@ -249,23 +246,23 @@ export default function SituationRoomPage() {
               {/* KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {[
-                  { label: 'Total Valid Votes', value: currentViewData.total_votes_cast, icon: Vote, color: 'from-blue-500/20 to-blue-600/5', border: 'group-hover:border-blue-500/50', iconColor: 'text-blue-400' },
-                  { label: 'PUs Reported', value: currentViewData.reported_polling_units, subValue: `/ ${currentViewData.total_polling_units}`, icon: MapPin, color: 'from-purple-500/20 to-purple-600/5', border: 'group-hover:border-purple-500/50', iconColor: 'text-purple-400' },
-                  { label: 'Reporting Progress', value: currentViewData.reporting_percentage, isPercent: true, icon: Activity, color: 'from-green-500/20 to-green-600/5', border: 'group-hover:border-green-500/50', iconColor: 'text-green-400' },
-                  { label: 'Voter Turnout', value: currentViewData.turnout_percentage, isPercent: true, icon: Users, color: 'from-orange-500/20 to-orange-600/5', border: 'group-hover:border-orange-500/50', iconColor: 'text-orange-400' },
+                  { label: 'Total Valid Votes', value: currentViewData.total_votes_cast, icon: Vote, color: 'from-primary-50 to-white', border: 'group-hover:border-primary-300', iconColor: 'text-primary-600' },
+                  { label: 'PUs Reported', value: currentViewData.reported_polling_units, subValue: `/ ${currentViewData.total_polling_units}`, icon: MapPin, color: 'from-yellow-50 to-white', border: 'group-hover:border-yellow-300', iconColor: 'text-status-warning' },
+                  { label: 'Reporting Progress', value: currentViewData.reporting_percentage, isPercent: true, icon: Activity, color: 'from-accent-50 to-white', border: 'group-hover:border-accent-300', iconColor: 'text-accent-600' },
+                  { label: 'Voter Turnout', value: currentViewData.turnout_percentage, isPercent: true, icon: Users, color: 'from-primary-50 to-white', border: 'group-hover:border-primary-300', iconColor: 'text-primary-600' },
                 ].map((kpi, idx) => (
-                  <div key={idx} className={`bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 ${kpi.border}`}>
+                  <div key={idx} className={`bg-dark-surface border border-dark-border rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 shadow-sm ${kpi.border}`}>
                     <div className={`absolute inset-0 bg-gradient-to-br ${kpi.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                     <div className="relative z-10 flex items-start justify-between">
                       <div>
-                        <p className="text-gray-400 font-medium text-sm mb-2">{kpi.label}</p>
-                        <h3 className="text-3xl font-mono font-bold text-white flex items-baseline gap-1">
+                        <p className="text-text-muted font-extrabold uppercase tracking-[.12em] text-[.63rem] mb-2">{kpi.label}</p>
+                        <h3 className="text-3xl font-mono font-bold text-text-primary flex items-baseline gap-1">
                           <CountUp end={kpi.value || 0} decimals={kpi.isPercent ? 1 : 0} separator="," duration={2} />
                           {kpi.isPercent && <span className="text-xl">%</span>}
-                          {kpi.subValue && <span className="text-lg text-gray-500 font-sans font-normal ml-1">{kpi.subValue}</span>}
+                          {kpi.subValue && <span className="text-lg text-text-muted font-sans font-normal ml-1">{kpi.subValue}</span>}
                         </h3>
                       </div>
-                      <div className={`p-3 bg-white/5 rounded-xl border border-white/10 ${kpi.iconColor}`}>
+                      <div className={`p-3 bg-dark-surface-2 rounded-xl border border-dark-border ${kpi.iconColor}`}>
                         <kpi.icon className="w-6 h-6" />
                       </div>
                     </div>
@@ -280,18 +277,18 @@ export default function SituationRoomPage() {
                 <div className="lg:col-span-4 space-y-6">
                   {/* Leading Highlight */}
                   {leadingCandidate && (
-                    <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-6 relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-primary-50 to-white border border-primary-200 rounded-2xl p-6 relative overflow-hidden shadow-sm">
                       <div className="absolute top-0 right-0 p-4 opacity-10">
                         <TrendingUp className="w-32 h-32" />
                       </div>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Current Leader</p>
-                      <h3 className="text-3xl font-bold text-white mb-1">{leadingCandidate.full_name}</h3>
+                      <p className="text-[.63rem] font-extrabold text-text-muted uppercase tracking-[.14em] mb-2">Current Leader</p>
+                      <h3 className="font-display text-3xl font-semibold text-text-primary mb-1">{leadingCandidate.full_name}</h3>
                       <div className="flex items-center gap-3 mb-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-white text-black">{leadingCandidate.party_code}</span>
-                        <span className="font-mono text-xl text-white">{(leadingCandidate.total_votes || 0).toLocaleString()} votes</span>
+                        <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-primary-700 text-white">{leadingCandidate.party_code}</span>
+                        <span className="font-mono text-xl text-text-primary">{(leadingCandidate.total_votes || 0).toLocaleString()} votes</span>
                       </div>
                       {margin > 0 && (
-                        <p className="text-sm text-green-400 flex items-center gap-1">
+                        <p className="text-sm font-bold text-accent-700 flex items-center gap-1">
                           <ArrowUpRight className="w-4 h-4" /> Leading by {(margin).toLocaleString()} votes
                         </p>
                       )}
@@ -299,9 +296,9 @@ export default function SituationRoomPage() {
                   )}
 
                   {/* Top Candidates List */}
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                    <h3 className="font-display text-lg font-bold text-white mb-6 flex items-center gap-2">
-                      <BarChart2 className="w-5 h-5 text-gray-400" /> Live Standings
+                  <div className="surface-elevated p-6">
+                    <h3 className="font-display text-lg font-semibold text-text-primary mb-6 flex items-center gap-2">
+                      <BarChart2 className="w-5 h-5 text-primary-600" /> Live Standings
                     </h3>
                     <div className="space-y-4">
                       {topCandidates.map((c: CandidateResult, i: number) => {
@@ -312,21 +309,21 @@ export default function SituationRoomPage() {
                             initial={{ opacity: 0, x: -20 }} 
                             animate={{ opacity: 1, x: 0 }} 
                             transition={{ delay: i * 0.1 }}
-                            className="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-white/20 transition-all relative overflow-hidden group"
+                            className="p-4 rounded-xl bg-dark-surface-2/60 border border-dark-border hover:border-primary-300 transition-all relative overflow-hidden group"
                           >
                             <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: color }} />
                             <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity" style={{ backgroundColor: color }} />
                             <div className="flex justify-between items-end mb-2 relative z-10">
                               <div>
-                                <h4 className="font-bold text-lg leading-none text-white">{c.party_code}</h4>
-                                <p className="text-xs text-gray-400 mt-1">{c.full_name}</p>
+                                <h4 className="font-bold text-lg leading-none text-text-primary">{c.party_code}</h4>
+                                <p className="text-xs text-text-muted mt-1">{c.full_name}</p>
                               </div>
                               <div className="text-right">
-                                <p className="font-mono font-bold text-xl text-white">{(c.total_votes || 0).toLocaleString()}</p>
+                                <p className="font-mono font-bold text-xl text-text-primary">{(c.total_votes || 0).toLocaleString()}</p>
                                 <p className="text-xs font-mono" style={{ color }}>{c.vote_percentage}%</p>
                               </div>
                             </div>
-                            <div className="w-full bg-white/5 rounded-full h-1.5 mt-2 relative z-10 overflow-hidden">
+                            <div className="w-full bg-primary-100 rounded-full h-1.5 mt-2 relative z-10 overflow-hidden">
                               <motion.div 
                                 initial={{ width: 0 }} 
                                 animate={{ width: `${c.vote_percentage}%` }} 
@@ -345,18 +342,18 @@ export default function SituationRoomPage() {
                 {/* Middle/Right Col: Map & Distribution */}
                 <div className="lg:col-span-8 flex flex-col gap-6">
                   {/* Map */}
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden relative flex-1 min-h-[400px] shadow-2xl z-0">
-                    <div className="absolute top-4 left-4 z-[400] bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-xl">
-                      <p className="text-sm font-bold text-white flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-blue-400" />
+                  <div className="bg-dark-surface border border-dark-border rounded-2xl overflow-hidden relative flex-1 min-h-[400px] shadow-lg shadow-primary-900/5 z-0">
+                    <div className="absolute top-4 left-4 z-[400] bg-dark-surface/95 backdrop-blur-md px-4 py-2 rounded-xl border border-dark-border shadow-lg">
+                      <p className="text-sm font-bold text-text-primary flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-primary-600" />
                         Live Geo-Tracking
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">Colors indicate leading party</p>
+                      <p className="text-xs text-text-muted mt-1">Colors indicate leading party</p>
                     </div>
-                    <MapContainer center={[10.2897, 11.1711]} zoom={9} style={{ height: '100%', width: '100%', background: '#0a0f0d' }} zoomControl={false}>
+                    <MapContainer center={[10.2897, 11.1711]} zoom={9} style={{ height: '100%', width: '100%', background: '#e8eff5' }} zoomControl={false}>
                       <MapController selectedLgaCoords={activeLgaCoords} />
                       <TileLayer
-                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                         attribution='&copy; CARTO'
                       />
                       {room.lga_breakdown?.map((lga: LGADashboardSummary) => {
@@ -386,7 +383,7 @@ export default function SituationRoomPage() {
                             center={c}
                             radius={isSelected ? radius + 6 : radius}
                             pathOptions={{ 
-                              color: isSelected ? '#fff' : color, 
+                            color: isSelected ? '#183f73' : color, 
                               fillColor: color, 
                               fillOpacity: isSelected ? 0.8 : 0.5,
                               weight: isSelected ? 3 : 1 
@@ -394,12 +391,12 @@ export default function SituationRoomPage() {
                             eventHandlers={{ click: () => setSelectedLgaId(lga.lga_id) }}
                           >
                             <LeafletTooltip direction="top" offset={[0, -10]} opacity={1} className="custom-tooltip border-0 bg-transparent shadow-none">
-                              <div className="bg-black/90 backdrop-blur-md border border-white/20 p-3 rounded-xl shadow-2xl text-center min-w-[120px]">
-                                <p className="font-bold text-white text-sm mb-1">{lga.lga_name}</p>
-                                <p className="text-xs text-gray-400 mb-2">{lga.reported_polling_units} / {lga.total_polling_units} PUs ({progress}%)</p>
+                              <div className="bg-white/95 backdrop-blur-md border border-primary-200 p-3 rounded-xl shadow-2xl text-center min-w-[120px]">
+                                <p className="font-bold text-text-primary text-sm mb-1">{lga.lga_name}</p>
+                                <p className="text-xs text-text-muted mb-2">{lga.reported_polling_units} / {lga.total_polling_units} PUs ({progress}%)</p>
                                 {lgaLeader && (
-                                  <div className="bg-white/10 rounded pt-1 pb-1 px-2 border border-white/5">
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Leading</p>
+                                  <div className="bg-primary-50 rounded pt-1 pb-1 px-2 border border-primary-100">
+                                    <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Leading</p>
                                     <p className="font-bold text-sm" style={{ color }}>{lgaLeader.party_code}</p>
                                   </div>
                                 )}
@@ -414,9 +411,9 @@ export default function SituationRoomPage() {
                   {/* Dual Chart Section */}
                   <div className="grid md:grid-cols-2 gap-6 h-[320px]">
                     {/* Vote Distribution Pie Chart */}
-                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col relative">
-                      <h3 className="font-display text-sm font-bold text-gray-300 mb-2 flex items-center gap-2">
-                        <PieChartIcon className="w-4 h-4" /> Vote Share Distribution
+                    <div className="surface-elevated p-6 flex flex-col relative">
+                      <h3 className="font-display text-sm font-semibold text-text-secondary mb-2 flex items-center gap-2">
+                        <PieChartIcon className="w-4 h-4 text-primary-600" /> Vote Share Distribution
                       </h3>
                       <div className="flex-1 min-h-[220px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -443,18 +440,18 @@ export default function SituationRoomPage() {
                     </div>
 
                     {/* Reporting vs Turnout Comparison */}
-                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col">
-                      <h3 className="font-display text-sm font-bold text-gray-300 mb-4 flex items-center gap-2">
+                    <div className="surface-elevated p-6 flex flex-col">
+                      <h3 className="font-display text-sm font-semibold text-text-secondary mb-4 flex items-center gap-2">
                          Reporting Progress by LGA
                       </h3>
                       <div className="flex-1 w-full overflow-hidden">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={sortedLgas.slice(0, 5)} layout="vertical" margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
                             <XAxis type="number" hide domain={[0, 100]} />
-                            <YAxis dataKey="lga_name" type="category" stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
+                            <YAxis dataKey="lga_name" type="category" stroke="#607186" fontSize={11} tickLine={false} axisLine={false} />
                             <RechartsTooltip 
-                              cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                              contentStyle={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }} 
+                              cursor={{ fill: 'rgba(49,89,138,0.06)' }}
+                              contentStyle={{ background: '#ffffff', border: '1px solid #d8e2ef', borderRadius: '8px', color: '#1c2c40' }} 
                             />
                             <Bar dataKey="reporting_percentage" name="Reporting %" radius={[0, 4, 4, 0]} barSize={16}>
                               {sortedLgas.slice(0, 5).map((entry, index) => (
@@ -470,22 +467,22 @@ export default function SituationRoomPage() {
               </div>
 
               {/* Ticker Tape */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden py-3 px-4 flex items-center gap-4 shadow-xl">
-                <div className="flex items-center gap-2 text-primary-400 font-bold whitespace-nowrap text-sm border-r border-white/10 pr-4">
+              <div className="bg-dark-surface border border-dark-border rounded-xl overflow-hidden py-3 px-4 flex items-center gap-4 shadow-sm">
+                <div className="flex items-center gap-2 text-primary-700 font-extrabold whitespace-nowrap text-sm border-r border-dark-border pr-4">
                   <Activity className="w-4 h-4 animate-pulse" /> LIVE FEED
                 </div>
                 <div className="flex-1 overflow-hidden relative">
                   <motion.div 
                     animate={{ x: ["0%", "-50%"] }} 
                     transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
-                    className="flex whitespace-nowrap gap-12 text-sm text-gray-300 font-mono"
+                    className="flex whitespace-nowrap gap-12 text-sm text-text-secondary font-mono"
                   >
                     {[...topCandidates, ...topCandidates].map((c: CandidateResult, i) => (
                       <span key={i} className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getPartyColor(c.party_code, i) }} />
-                        <span className="font-bold text-white">{c.party_code}</span>
+                        <span className="font-bold text-text-primary">{c.party_code}</span>
                         <span>{c.total_votes?.toLocaleString()} votes</span>
-                        <span className="text-gray-500">({c.vote_percentage}%)</span>
+                        <span className="text-text-muted">({c.vote_percentage}%)</span>
                       </span>
                     ))}
                   </motion.div>

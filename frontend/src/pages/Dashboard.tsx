@@ -69,11 +69,13 @@ export default function DashboardPage() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Welcome */}
-      <div className="glass-card-accent p-6">
-        <h1 className="font-display text-2xl font-bold text-text-primary">
+      <div className="surface-elevated relative overflow-hidden p-6 sm:p-7">
+        <div className="absolute right-0 top-0 h-full w-1.5 bg-primary-600" />
+        <p className="eyebrow">Operations workspace</p>
+        <h1 className="mt-2 font-display text-3xl font-semibold text-text-primary">
           Welcome, {user.first_name}!
         </h1>
-        <p className="text-text-muted mt-1">
+          <p className="text-text-muted mt-2">
           {user.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Dashboard
         </p>
       </div>
@@ -99,9 +101,10 @@ export default function DashboardPage() {
 
       {/* PU Agent special view */}
       {user.role === 'pu_agent' && (
-        <div className="glass-card p-6 text-center">
-          <Upload className="w-12 h-12 text-accent-500 mx-auto mb-3" />
-          <h2 className="font-display text-xl font-bold text-text-primary mb-2">Ready to Submit Results?</h2>
+        <div className="surface-elevated p-6 text-center sm:p-8">
+          <Upload className="w-12 h-12 text-primary-600 mx-auto mb-3" />
+          <p className="eyebrow">Polling unit workflow</p>
+          <h2 className="mt-2 font-display text-xl font-semibold text-text-primary mb-2">Ready to Submit Results?</h2>
           <p className="text-text-muted mb-4">Upload your EC8A result sheet and enter vote counts</p>
           <Link to="/app/results/submit" className="btn-accent inline-flex items-center gap-2">
             <Upload className="w-5 h-5" /> Submit Result
@@ -114,9 +117,9 @@ export default function DashboardPage() {
         <h2 className="font-display text-lg font-semibold text-text-primary mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(quickLinks[user.role] || []).map((link, i) => (
-            <Link key={i} to={link.path} className="glass-card p-4 hover:border-primary-500/30 transition-all group">
-              <link.icon className={`w-8 h-8 mb-2 ${link.color === 'accent' ? 'text-accent-500' : 'text-primary-400'} group-hover:scale-110 transition-transform`} />
-              <p className="text-sm font-medium text-text-primary">{link.label}</p>
+            <Link key={i} to={link.path} className="surface-elevated p-5 hover:border-primary-300 transition-all group">
+              <link.icon className={`w-8 h-8 mb-3 ${link.color === 'accent' ? 'text-accent-700' : 'text-primary-600'} group-hover:scale-110 transition-transform`} />
+              <p className="text-sm font-bold text-text-primary">{link.label}</p>
             </Link>
           ))}
         </div>

@@ -1,3 +1,4 @@
+/* Quiet Atlas: a calm cartographic command bar with compact operational context. */
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -98,23 +99,21 @@ function TopBar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-dark-surface/80 backdrop-blur-md border-b border-dark-border no-print">
-      <div className="flex items-center justify-between h-16 px-4 lg:px-6">
+    <header className="sticky top-0 z-30 bg-dark-surface/90 backdrop-blur-xl border-b border-dark-border no-print">
+      <div className="flex items-center justify-between h-[4.5rem] px-4 lg:px-8">
         {/* Left section */}
         <div className="flex items-center gap-4">
           {/* Mobile hamburger */}
           <button
             onClick={() => dispatch(toggleSidebar())}
-            className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-dark-surface-2 transition-colors lg:hidden"
+            className="p-2 rounded-xl text-text-muted hover:text-primary-700 hover:bg-primary-50 transition-colors lg:hidden"
             aria-label="Toggle sidebar"
           >
             <Menu className="w-5 h-5" />
           </button>
 
           {/* Page title */}
-          <h2 className="font-display text-lg font-semibold text-text-primary hidden sm:block">
-            {pageTitle}
-          </h2>
+          <div className="hidden sm:block"><p className="eyebrow !text-[.56rem] !tracking-[.15em]">Operations</p><h2 className="font-display text-xl font-semibold text-text-primary leading-none mt-1">{pageTitle}</h2></div>
         </div>
 
         {/* Right section */}
@@ -126,7 +125,7 @@ function TopBar() {
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-48 lg:w-64 bg-dark-surface-2 border border-dark-border rounded-lg pl-9 pr-4 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/50 transition-all duration-200"
+                className="w-48 lg:w-64 bg-dark-surface-2/70 border border-dark-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200"
               />
             </div>
           </div>
@@ -134,7 +133,7 @@ function TopBar() {
           {/* Mobile search toggle */}
           <button
             onClick={() => setSearchOpen(!searchOpen)}
-            className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-dark-surface-2 transition-colors md:hidden"
+            className="p-2 rounded-xl text-text-muted hover:text-primary-700 hover:bg-primary-50 transition-colors md:hidden"
             aria-label="Search"
           >
             <Search className="w-5 h-5" />
@@ -144,8 +143,8 @@ function TopBar() {
           <div
             className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
               isOnline
-                ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                : 'bg-red-500/10 text-red-400 border-red-500/20'
+                ? 'bg-accent-50 text-accent-700 border-accent-200'
+                : 'bg-red-50 text-status-error border-red-200'
             }`}
           >
             {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
@@ -163,7 +162,7 @@ function TopBar() {
           {/* Notifications */}
           <button
             onClick={() => navigate('/app/notifications')}
-            className="relative p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-dark-surface-2 transition-colors"
+            className="relative p-2 rounded-xl text-text-muted hover:text-primary-700 hover:bg-primary-50 transition-colors"
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
@@ -178,9 +177,9 @@ function TopBar() {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-dark-surface-2 transition-colors"
+              className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-primary-50 transition-colors"
             >
-              <div className="w-8 h-8 rounded-full bg-primary-500/20 border border-primary-500/30 flex items-center justify-center text-primary-100 text-xs font-semibold">
+              <div className="w-9 h-9 rounded-xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-700 text-xs font-extrabold">
                 {initials}
               </div>
               <ChevronDown
@@ -197,7 +196,7 @@ function TopBar() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-56 bg-dark-surface-2 border border-dark-border rounded-xl shadow-xl overflow-hidden"
+                  className="absolute right-0 mt-2 w-56 bg-dark-surface border border-dark-border rounded-2xl shadow-xl shadow-primary-900/10 overflow-hidden"
                 >
                   {/* User info header */}
                   <div className="px-4 py-3 border-b border-dark-border">

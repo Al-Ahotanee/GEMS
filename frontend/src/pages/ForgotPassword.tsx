@@ -28,17 +28,17 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen bg-dark-bg flex items-center justify-center px-4 relative overflow-hidden">
-      <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(26,86,50,0.1) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+      <div className="absolute inset-0 atlas-grid" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(49,89,138,0.13) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
-          <Shield className="w-10 h-10 text-primary-500 mx-auto mb-2" />
-          <h1 className="font-display text-3xl font-bold text-accent-500">GSEM</h1>
+          <Shield className="w-10 h-10 text-primary-700 mx-auto mb-2" />
+          <h1 className="font-display text-3xl font-semibold text-primary-800">GSEM</h1>
         </div>
-        <div className="glass-card-accent p-8">
+        <div className="surface-elevated p-8 sm:p-9">
           {sent ? (
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-400" />
+              <div className="w-16 h-16 bg-accent-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="w-8 h-8 text-accent-700" />
               </div>
               <h2 className="font-display text-xl font-semibold text-text-primary mb-2">Check Your Email</h2>
               <p className="text-text-muted text-sm mb-6">We've sent a password reset link to {email}</p>

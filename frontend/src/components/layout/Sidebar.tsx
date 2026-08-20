@@ -1,3 +1,4 @@
+/* Quiet Atlas: cobalt field guide navigation, cloud surfaces, and jurisdiction-first hierarchy. */
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -126,7 +127,7 @@ function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 bg-dark-surface border-r border-dark-border z-40 no-print">
+      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 bg-dark-surface/95 backdrop-blur-xl border-r border-dark-border z-40 no-print">
         <SidebarContent
           filteredItems={filteredItems}
           userRole={userRole}
@@ -199,21 +200,19 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
   return (
     <div className="flex flex-col h-full">
       {/* Logo / Branding */}
-      <div className="px-5 pt-6 pb-4 border-b border-dark-border">
+      <div className="px-6 pt-7 pb-5 border-b border-dark-border">
         <NavLink to="/app/dashboard" className="block" onClick={onLinkClick}>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-primary-500">
-            G<span className="text-accent-500">S</span>EM
-          </h1>
-          <p className="text-[11px] text-text-muted mt-0.5 tracking-wide uppercase">
-            Gombe State Election Monitor
-          </p>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-600 text-white shadow-sm shadow-primary-900/20"><Vote className="h-5 w-5" /></span>
+            <span><span className="block font-display text-2xl font-semibold tracking-tight text-primary-800">GSEM</span><span className="block text-[.59rem] font-extrabold uppercase tracking-[.16em] text-text-muted">Election Monitor</span></span>
+          </div>
         </NavLink>
       </div>
 
       {/* User info */}
-      <div className="px-5 py-4 border-b border-dark-border">
+      <div className="px-6 py-5 border-b border-dark-border">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-primary-500/20 border border-primary-500/30 flex items-center justify-center text-primary-100 text-sm font-semibold">
+          <div className="w-10 h-10 rounded-xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-700 text-sm font-extrabold">
             {userName
               .split(' ')
               .map((n) => n[0])
@@ -222,8 +221,8 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
               .toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-text-primary truncate">{userName}</p>
-            <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-500/15 text-accent-500 uppercase tracking-wide">
+            <p className="text-sm font-bold text-text-primary truncate">{userName}</p>
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md text-[.58rem] font-extrabold bg-accent-50 text-accent-700 uppercase tracking-[.1em]">
               {roleLabelMap[userRole] ?? userRole}
             </span>
           </div>
@@ -231,7 +230,7 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+      <nav className="flex-1 overflow-y-auto px-4 py-5 space-y-1">
         {filteredItems.map((item) => {
           const showSection = item.section && item.section !== lastSection;
           if (item.section) lastSection = item.section;
@@ -247,7 +246,7 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
           return (
             <div key={item.label}>
               {showSection && (
-                <p className="px-4 pt-5 pb-2 text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                <p className="px-3 pt-6 pb-2 text-[.61rem] font-extrabold text-text-muted uppercase tracking-[.18em]">
                   {item.section}
                 </p>
               )}
@@ -274,9 +273,9 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
       </nav>
 
       {/* Bottom section */}
-      <div className="px-3 py-4 border-t border-dark-border space-y-2">
+      <div className="px-4 py-4 border-t border-dark-border space-y-2">
         {/* Online / Offline indicator */}
-        <div className="flex items-center gap-2 px-4 py-2">
+        <div className="flex items-center gap-2 px-3 py-2">
           {isOnline ? (
             <Wifi className="w-4 h-4 text-status-success" />
           ) : (
@@ -290,7 +289,7 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
         {/* Logout button */}
         <button
           onClick={onLogout}
-          className="sidebar-link w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
+          className="sidebar-link w-full text-status-error hover:text-red-700 hover:bg-red-50"
         >
           <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
           <span className="text-sm">Logout</span>

@@ -130,32 +130,32 @@ export default function SubmitResultPage() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto space-y-6">
       {/* Online status */}
-      <div className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg ${isOnline ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+      <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-xl border ${isOnline ? 'border-accent-200 bg-accent-50 text-accent-700' : 'border-status-error/20 bg-red-50 text-status-error'}`}>
         {isOnline ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
         {isOnline ? 'Online — results will be submitted immediately' : 'Offline — results will be saved locally and synced later'}
       </div>
 
       {/* Step Progress */}
-      <div className="glass-card p-4">
+      <div className="surface-elevated p-4 sm:p-5">
         <div className="flex items-center justify-between">
           {steps.map((step, i) => (
             <div key={i} className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                i < currentStep ? 'bg-primary-500 text-white' : i === currentStep ? 'bg-accent-500 text-dark-bg' : 'bg-dark-surface-3 text-text-muted'
+                i < currentStep ? 'bg-primary-700 text-white' : i === currentStep ? 'bg-accent-500 text-primary-950' : 'bg-primary-50 text-text-muted'
               }`}>{i < currentStep ? '✓' : i + 1}</div>
-              {i < steps.length - 1 && <div className={`h-0.5 w-4 md:w-12 mx-1 ${i < currentStep ? 'bg-primary-500' : 'bg-dark-surface-3'}`} />}
+              {i < steps.length - 1 && <div className={`h-0.5 w-4 md:w-12 mx-1 ${i < currentStep ? 'bg-primary-600' : 'bg-primary-100'}`} />}
             </div>
           ))}
         </div>
-        <p className="text-center text-accent-500 font-medium mt-2">{steps[currentStep]}</p>
+        <p className="text-center text-primary-700 font-bold mt-3">{steps[currentStep]}</p>
       </div>
 
       {/* Step Content */}
-      <div className="glass-card-accent p-6">
+      <div className="surface-elevated p-6 sm:p-8">
         {/* Step 1: Election */}
         {currentStep === 0 && (
           <div className="text-center space-y-4">
-            <FileText className="w-12 h-12 text-primary-400 mx-auto" />
+            <FileText className="w-12 h-12 text-primary-600 mx-auto" />
             <h2 className="font-display text-xl font-bold text-text-primary">{election?.title || 'No active election'}</h2>
             <p className="text-text-muted">Election Date: {election?.election_date}</p>
             {election && <button onClick={() => setCurrentStep(1)} className="btn-primary">Confirm & Continue</button>}
@@ -165,12 +165,12 @@ export default function SubmitResultPage() {
         {/* Step 2: PU Confirm */}
         {currentStep === 1 && (
           <div className="space-y-4">
-            <h2 className="font-display text-lg font-bold text-text-primary flex items-center gap-2"><MapPin className="w-5 h-5 text-accent-500" /> Your Polling Unit</h2>
+            <h2 className="font-display text-lg font-semibold text-text-primary flex items-center gap-2"><MapPin className="w-5 h-5 text-primary-600" /> Your Polling Unit</h2>
             {pu ? (
-              <div className="bg-dark-surface-2 rounded-lg p-4 space-y-2">
+              <div className="rounded-2xl border border-primary-100 bg-primary-50/60 p-4 space-y-2">
                 <p className="text-text-primary font-medium">{pu.name}</p>
                 <p className="text-text-muted text-sm">Code: <span className="font-mono">{pu.inec_pu_code}</span></p>
-                <p className="text-text-muted text-sm">Registered Voters: <span className="font-mono text-accent-500">{pu.registered_voters}</span></p>
+                <p className="text-text-muted text-sm">Registered Voters: <span className="font-mono text-primary-700">{pu.registered_voters}</span></p>
               </div>
             ) : (
               <p className="text-red-400">No polling unit assigned to your account.</p>
@@ -178,7 +178,7 @@ export default function SubmitResultPage() {
             <button onClick={() => { captureGPS(); }} className="btn-outline w-full flex items-center justify-center gap-2">
               <MapPin className="w-4 h-4" /> Capture GPS Location
             </button>
-            {gps && <p className="text-green-400 text-sm">📍 GPS: {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</p>}
+            {gps && <p className="text-accent-700 text-sm font-semibold">GPS: {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</p>}
             <div className="flex gap-3">
               <button onClick={() => setCurrentStep(0)} className="btn-outline flex-1">Back</button>
               <button onClick={() => setCurrentStep(2)} className="btn-primary flex-1" disabled={!pu}>Continue</button>
@@ -189,8 +189,8 @@ export default function SubmitResultPage() {
         {/* Step 3: Upload */}
         {currentStep === 2 && (
           <div className="space-y-4">
-            <h2 className="font-display text-lg font-bold text-text-primary flex items-center gap-2"><Camera className="w-5 h-5 text-accent-500" /> Upload EC8A Photos</h2>
-            <div {...getRootProps()} className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${isDragActive ? 'border-accent-500 bg-accent-500/5' : 'border-dark-border hover:border-primary-500'}`}>
+            <h2 className="font-display text-lg font-semibold text-text-primary flex items-center gap-2"><Camera className="w-5 h-5 text-primary-600" /> Upload EC8A Photos</h2>
+            <div {...getRootProps()} className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition ${isDragActive ? 'border-accent-500 bg-accent-50' : 'border-primary-200 bg-primary-50/30 hover:border-primary-500'}`}>
               <input {...getInputProps()} />
               <Upload className="w-10 h-10 text-text-muted mx-auto mb-2" />
               <p className="text-text-muted">Drag & drop photos or click to browse</p>
@@ -219,7 +219,7 @@ export default function SubmitResultPage() {
             <h2 className="font-display text-lg font-bold text-text-primary">Enter Vote Counts</h2>
             <div className="space-y-3">
               {candidates.map((c: Candidate) => (
-                <div key={c.id} className="flex items-center justify-between bg-dark-surface-2 rounded-lg p-3">
+                <div key={c.id} className="flex items-center justify-between rounded-xl border border-primary-100 bg-primary-50/40 p-3">
                   <div>
                     <p className="text-text-primary font-medium text-sm">{c.full_name}</p>
                     <p className="text-text-muted text-xs">{c.party_code} — {c.party_name}</p>
@@ -239,8 +239,8 @@ export default function SubmitResultPage() {
                 <input type="number" min="0" value={rejected || ''} onChange={e => setRejected(parseInt(e.target.value) || 0)} className="input-field font-mono" />
               </div>
             </div>
-            <div className="bg-dark-surface-2 rounded-lg p-3 space-y-1">
-              <div className="flex justify-between text-sm"><span className="text-text-muted">Total Valid Votes:</span><span className="font-mono text-accent-500">{totalValidVotes}</span></div>
+            <div className="rounded-xl border border-primary-100 bg-primary-50/60 p-3 space-y-1">
+              <div className="flex justify-between text-sm"><span className="text-text-muted">Total Valid Votes:</span><span className="font-mono text-primary-700">{totalValidVotes}</span></div>
               <div className="flex justify-between text-sm"><span className="text-text-muted">Total Votes Cast:</span><span className="font-mono text-text-primary font-bold">{totalVotesCast}</span></div>
             </div>
             {totalVotesCast > accredited && accredited > 0 && (
@@ -260,11 +260,11 @@ export default function SubmitResultPage() {
         {/* Step 5: Review */}
         {currentStep === 4 && (
           <div className="space-y-4">
-            <h2 className="font-display text-lg font-bold text-text-primary flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" /> Review & Submit</h2>
-            <div className="bg-dark-surface-2 rounded-lg p-4 space-y-3">
+            <h2 className="font-display text-lg font-semibold text-text-primary flex items-center gap-2"><CheckCircle className="w-5 h-5 text-accent-700" /> Review & Submit</h2>
+            <div className="rounded-2xl border border-primary-100 bg-primary-50/50 p-4 space-y-3">
               <p className="text-sm"><span className="text-text-muted">Election:</span> <span className="text-text-primary">{election?.title}</span></p>
               <p className="text-sm"><span className="text-text-muted">Polling Unit:</span> <span className="text-text-primary">{pu?.name} ({pu?.inec_pu_code})</span></p>
-              <p className="text-sm"><span className="text-text-muted">Photos:</span> <span className="text-accent-500">{images.length} uploaded</span></p>
+              <p className="text-sm"><span className="text-text-muted">Photos:</span> <span className="text-primary-700 font-semibold">{images.length} uploaded</span></p>
               {gps && <p className="text-sm"><span className="text-text-muted">GPS:</span> <span className="font-mono text-xs">{gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</span></p>}
               <hr className="border-dark-border" />
               {candidates.map((c: Candidate) => (
@@ -274,7 +274,7 @@ export default function SubmitResultPage() {
                 </div>
               ))}
               <hr className="border-dark-border" />
-              <div className="flex justify-between text-sm font-bold"><span>Total Votes Cast:</span><span className="text-accent-500 font-mono">{totalVotesCast}</span></div>
+              <div className="flex justify-between text-sm font-bold"><span>Total Votes Cast:</span><span className="text-primary-700 font-mono">{totalVotesCast}</span></div>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setCurrentStep(3)} className="btn-outline flex-1">Back</button>

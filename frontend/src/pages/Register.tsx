@@ -92,9 +92,9 @@ export default function RegisterPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center px-4">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card-accent p-10 max-w-md text-center">
-          <div className="w-16 h-16 bg-primary-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserPlus className="w-8 h-8 text-primary-300" />
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="surface-elevated p-10 max-w-md text-center">
+          <div className="w-16 h-16 bg-accent-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserPlus className="w-8 h-8 text-accent-700" />
           </div>
           <h2 className="font-display text-2xl font-bold text-text-primary mb-3">Application Submitted!</h2>
           <p className="text-text-muted mb-6">Your registration is being reviewed. You will be notified once approved.</p>
@@ -106,18 +106,18 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-dark-bg flex items-center justify-center px-4 py-10 relative overflow-hidden">
-      <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(26,86,50,0.1) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+      <div className="absolute inset-0 atlas-grid" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(49,89,138,0.13) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-lg">
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <Shield className="w-8 h-8 text-primary-500" />
-            <h1 className="font-display text-3xl font-bold text-accent-500">GSEM</h1>
+            <Shield className="w-8 h-8 text-primary-700" />
+            <h1 className="font-display text-3xl font-semibold text-primary-800">GSEM</h1>
           </div>
           <p className="text-text-muted text-sm">Agent Registration</p>
         </div>
 
-        <div className="glass-card-accent p-8">
+        <div className="surface-elevated p-8 sm:p-9">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -216,7 +216,7 @@ export default function RegisterPage() {
           </form>
 
           <p className="text-center text-text-muted text-sm mt-4">
-            Already registered? <Link to="/login" className="text-accent-500 hover:text-accent-400 font-medium">Sign in</Link>
+            Already registered? <Link to="/login" className="text-primary-700 hover:text-primary-900 font-bold">Sign in</Link>
           </p>
         </div>
       </motion.div>

@@ -1,3 +1,4 @@
+/* Quiet Atlas: cloud-white operating canvas with cobalt wayfinding and restrained moss alerts. */
 import React, { useEffect, useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,18 +27,18 @@ function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen bg-dark-bg atlas-grid">
       <OfflineSyncManager />
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main content area — offset by sidebar width on desktop */}
-      <div className="lg:pl-64 print:pl-0 flex flex-col min-h-screen">
+      <div className="lg:pl-72 print:pl-0 flex flex-col min-h-screen">
         {/* Top bar */}
         <TopBar />
 
         {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -55,7 +56,7 @@ function DashboardLayout() {
       {/* Floating SOS Incident Button */}
       <button
         onClick={() => setIsIncidentModalOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 group no-print"
+        className="fixed bottom-6 right-6 z-40 bg-status-error hover:bg-red-700 text-white p-4 rounded-2xl shadow-lg shadow-red-900/20 flex items-center justify-center transition-transform duration-200 hover:-translate-y-1 active:scale-95 group no-print"
         aria-label="Report Incident"
       >
         <AlertTriangle className="w-6 h-6 animate-pulse group-hover:animate-none" />

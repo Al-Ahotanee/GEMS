@@ -1,3 +1,4 @@
+/* Quiet Atlas: tactile white metric slips, cobalt/moss signal icons, and factual mono numerals. */
 import { motion } from 'framer-motion';
 import CountUp from 'react-countup';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -23,28 +24,28 @@ interface StatCardProps {
 const colorStyles: Record<CardColor, { iconBg: string; iconText: string; glow: string }> = {
   primary: {
     iconBg: 'bg-primary-500/15',
-    iconText: 'text-primary-300',
-    glow: 'hover:shadow-primary-500/10',
+    iconText: 'text-primary-600',
+    glow: 'hover:shadow-primary-500/15',
   },
   accent: {
     iconBg: 'bg-accent-500/15',
-    iconText: 'text-accent-400',
-    glow: 'hover:shadow-accent-500/10',
+    iconText: 'text-accent-600',
+    glow: 'hover:shadow-accent-500/15',
   },
   success: {
     iconBg: 'bg-green-500/15',
-    iconText: 'text-green-400',
-    glow: 'hover:shadow-green-500/10',
+    iconText: 'text-accent-600',
+    glow: 'hover:shadow-accent-500/15',
   },
   warning: {
     iconBg: 'bg-yellow-500/15',
-    iconText: 'text-yellow-400',
-    glow: 'hover:shadow-yellow-500/10',
+    iconText: 'text-status-warning',
+    glow: 'hover:shadow-yellow-500/15',
   },
   danger: {
     iconBg: 'bg-red-500/15',
-    iconText: 'text-red-400',
-    glow: 'hover:shadow-red-500/10',
+    iconText: 'text-status-error',
+    glow: 'hover:shadow-red-500/15',
   },
 };
 
@@ -69,14 +70,14 @@ function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'primary'
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       className={clsx(
         'stat-card cursor-default',
-        'hover:shadow-lg',
+        'hover:shadow-lg hover:border-primary-300/70',
         styles.glow
       )}
     >
       <div className="flex items-start justify-between">
         {/* Text content */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-text-muted font-medium truncate">{title}</p>
+          <p className="text-[.68rem] text-text-muted font-extrabold uppercase tracking-[.11em] truncate">{title}</p>
           <p className="mt-2 text-3xl font-bold font-mono text-text-primary tracking-tight">
             <CountUp end={value} duration={1.8} separator="," preserveValue />
           </p>
@@ -86,14 +87,14 @@ function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'primary'
           {trend && (
             <div className="mt-2 flex items-center gap-1">
               {trend.isPositive ? (
-                <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+                <TrendingUp className="w-3.5 h-3.5 text-accent-600" />
               ) : (
                 <TrendingDown className="w-3.5 h-3.5 text-red-400" />
               )}
               <span
                 className={clsx(
                   'text-xs font-semibold font-mono',
-                  trend.isPositive ? 'text-green-400' : 'text-red-400'
+                  trend.isPositive ? 'text-accent-600' : 'text-status-error'
                 )}
               >
                 {trend.isPositive ? '+' : ''}
@@ -106,7 +107,7 @@ function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'primary'
         {/* Icon */}
         <div
           className={clsx(
-            'flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center',
+            'flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center',
             styles.iconBg
           )}
         >

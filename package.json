@@ -16,6 +16,9 @@
     "migrate": "npm run migrate --workspace backend",
     "seed": "npm run seed --workspace backend",
     "setup": "npm run setup --workspace backend",
+    "test:uat": "node scripts/uat.e2e.js",
+    "test:role-matrix": "node scripts/role-matrix.e2e.js",
+    "test:socket-hardening": "node scripts/socket-hardening.e2e.js",
     "check": "npm run check --workspace backend && npm run build --workspace frontend"
   },
   "engines": {

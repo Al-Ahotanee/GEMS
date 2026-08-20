@@ -1,3 +1,4 @@
+/* Quiet Atlas: evidence-led tables with a cloud surface and restrained geographic-blue hierarchy. */
 import { ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 
@@ -90,11 +91,11 @@ function DataTable<T extends Record<string, unknown>>({
   };
 
   return (
-    <div className="glass-card overflow-hidden">
+    <div className="glass-card overflow-hidden border-dark-border">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px]">
           <thead>
-            <tr className="bg-dark-surface-2/50">
+            <tr className="bg-primary-50/65">
               {columns.map((col) => (
                 <th key={col.key} className="table-header">
                   {col.label}
@@ -120,7 +121,7 @@ function DataTable<T extends Record<string, unknown>>({
               data.map((row, idx) => (
                 <tr
                   key={rowKey ? rowKey(row, idx) : idx}
-                  className="hover:bg-dark-surface-2/40 transition-colors duration-150"
+                  className="hover:bg-primary-50/45 transition-colors duration-150"
                 >
                   {columns.map((col) => (
                     <td key={col.key} className="table-cell">
@@ -158,7 +159,7 @@ function DataTable<T extends Record<string, unknown>>({
             <button
               onClick={() => onPageChange?.(pagination.currentPage - 1)}
               disabled={pagination.currentPage <= 1}
-              className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-dark-surface-2 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1.5 rounded-lg text-text-muted hover:text-primary-700 hover:bg-primary-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Previous page"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -169,7 +170,7 @@ function DataTable<T extends Record<string, unknown>>({
             <button
               onClick={() => onPageChange?.(pagination.currentPage + 1)}
               disabled={pagination.currentPage >= pagination.totalPages}
-              className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-dark-surface-2 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1.5 rounded-lg text-text-muted hover:text-primary-700 hover:bg-primary-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Next page"
             >
               <ChevronRight className="w-4 h-4" />
