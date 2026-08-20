@@ -5,6 +5,7 @@ services:
     plan: free
     region: frankfurt
     buildCommand: npm ci && npm run build
+    preDeployCommand: npm run migrate
     startCommand: npm start
     healthCheckPath: /health
     autoDeployTrigger: commit
