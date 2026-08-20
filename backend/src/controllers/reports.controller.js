@@ -133,7 +133,7 @@ const generateExcel = async (req, res) => {
       ...results.map((r) => [
         r.submission_uid, r.pu_name, r.ward_name, r.lga_name, r.status,
         Number(r.accredited_voters || 0), Number(r.total_votes_cast || 0), Number(r.rejected_votes || 0),
-        r.created_at ? new Date(r.created_at) : null
+        r.created_at ? new Date(r.created_at).toISOString() : ''
       ])
     ];
 

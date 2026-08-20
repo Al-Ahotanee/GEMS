@@ -19,7 +19,7 @@ const authenticate = async (req, res, next) => {
 
     // Get user from DB
     const [users] = await pool.query(
-      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, photo_url FROM users WHERE id = ?',
+      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, photo_url, token_version FROM users WHERE id = ?',
       [decoded.id]
     );
 
@@ -28,6 +28,9 @@ const authenticate = async (req, res, next) => {
     }
 
     const user = users[0];
+    if (decoded.token_version !== undefined && Number(decoded.token_version) !== Number(user.token_version || 0)) {
+      return ApiResponse.unauthorized(res, 'Access token has been revoked');
+    }
     if (user.status !== 'active') {
       return ApiResponse.forbidden(res, 'Account is not active');
     }
@@ -58,12 +61,15 @@ const optionalAuth = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET, { issuer: 'gsem-api' });
 
     const [users] = await pool.query(
-      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, photo_url FROM users WHERE id = ?',
+      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, photo_url, token_version FROM users WHERE id = ?',
       [decoded.id]
     );
 
     if (users.length) {
-      req.user = users[0];
+      const user = users[0];
+      if (decoded.token_version === undefined || Number(decoded.token_version) === Number(user.token_version || 0)) {
+        req.user = user;
+      }
     }
   } catch (error) {
     // Ignore auth errors for optional auth

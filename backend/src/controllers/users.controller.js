@@ -53,7 +53,8 @@ const changePassword = async (req, res) => {
     if (!valid) return ApiResponse.badRequest(res, 'Current password is incorrect');
 
     const hash = await bcrypt.hash(new_password, 12);
-    await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.user.id]);
+    await pool.query('UPDATE users SET password_hash = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?', [hash, req.user.id]);
+    await pool.query('UPDATE refresh_tokens SET revoked = 1, revoked_at = NOW() WHERE user_id = ? AND revoked = 0', [req.user.id]);
     return ApiResponse.success(res, null, 'Password changed successfully');
   } catch (error) {
     logger.error('Change password error:', error);

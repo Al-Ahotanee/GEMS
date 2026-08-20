@@ -121,11 +121,12 @@ async function submitResult(req, res) {
     }
 
     // Check for duplicate submission
-    const [existingSub] = await pool.query(
-      'SELECT id FROM result_submissions WHERE election_id = ? AND polling_unit_id = ? AND status != ?',
-      [election_id, polling_unit_id, 'rejected']
+    const [existingSubmissions] = await pool.query(
+      'SELECT id, status FROM result_submissions WHERE election_id = ? AND polling_unit_id = ?',
+      [election_id, polling_unit_id]
     );
-    if (existingSub.length > 0) {
+    const existingSubmission = existingSubmissions[0];
+    if (existingSubmission && existingSubmission.status !== 'rejected') {
       return ApiResponse.conflict(res, 'A result has already been submitted for this polling unit in this election');
     }
 
@@ -163,18 +164,42 @@ async function submitResult(req, res) {
     // Begin transaction
     await connection.beginTransaction();
 
-    // Insert result_submissions row
-    const [submitResult] = await connection.query(
-      `INSERT INTO result_submissions 
-        (submission_uid, election_id, polling_unit_id, ward_id, lga_id,
-         submitted_by, accredited_voters, total_votes_cast,
-         total_valid_votes, rejected_votes, latitude, longitude, content_hash, digital_signature,
-         status, is_offline_submission, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [submissionUid, election_id, polling_unit_id, pu.ward_id, pu.lga_id,
-       userId, accVoters, totalCast, validVotes, rejVotes, latitude || null, longitude || null, contentHash, digitalSignature, 'pending', Boolean(req.body.is_offline_submission)]
-    );
-    const submissionId = submitResult.insertId;
+    let submissionId;
+    if (existingSubmission?.status === 'rejected') {
+      submissionId = existingSubmission.id;
+      await connection.query('DELETE FROM result_sheet_images WHERE submission_id = ?', [submissionId]);
+      await connection.query('DELETE FROM vote_data WHERE submission_id = ?', [submissionId]);
+      await connection.query('DELETE FROM anomalies WHERE submission_id = ?', [submissionId]);
+      await connection.query(
+        `UPDATE result_submissions
+            SET submitted_by = ?, accredited_voters = ?, total_votes_cast = ?, total_valid_votes = ?,
+                rejected_votes = ?, latitude = ?, longitude = ?, content_hash = ?, digital_signature = ?,
+                status = 'pending', verified_by = NULL, verified_at = NULL, rejection_reason = NULL,
+                flag_reason = NULL, flagged_by = NULL, flagged_at = NULL, is_offline_submission = ?,
+                is_anomalous = FALSE, synced_at = NULL, updated_at = NOW()
+          WHERE id = ?`,
+        [userId, accVoters, totalCast, validVotes, rejVotes, latitude || null, longitude || null,
+          contentHash, digitalSignature, Boolean(req.body.is_offline_submission), submissionId]
+      );
+    } else {
+      const [submitResult] = await connection.query(
+        `INSERT INTO result_submissions
+          (submission_uid, election_id, polling_unit_id, ward_id, lga_id,
+           submitted_by, accredited_voters, total_votes_cast,
+           total_valid_votes, rejected_votes, latitude, longitude, content_hash, digital_signature,
+           status, is_offline_submission, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [submissionUid, election_id, polling_unit_id, pu.ward_id, pu.lga_id,
+          userId, accVoters, totalCast, validVotes, rejVotes, latitude || null, longitude || null,
+          contentHash, digitalSignature, 'pending', Boolean(req.body.is_offline_submission)]
+      );
+      submissionId = submitResult.insertId;
+      if (!submissionId) {
+        const conflict = new Error('A result has already been submitted for this polling unit in this election');
+        conflict.statusCode = 409;
+        throw conflict;
+      }
+    }
 
     // Insert result_sheet_images for each uploaded file
     if (req.files && req.files.length > 0) {
@@ -287,6 +312,9 @@ async function submitResult(req, res) {
 
   } catch (error) {
     await connection.rollback();
+    if (error.statusCode === 409) {
+      return ApiResponse.conflict(res, error.message);
+    }
     logger.error('Submit result error:', error);
     return ApiResponse.error(res, 'Failed to submit result');
   } finally {

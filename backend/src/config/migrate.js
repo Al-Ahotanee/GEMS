@@ -17,6 +17,8 @@ const schema = [
     lga_id INTEGER NOT NULL REFERENCES lgas(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     code VARCHAR(20) NOT NULL UNIQUE,
+    latitude NUMERIC(10, 7),
+    longitude NUMERIC(10, 7),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `CREATE TABLE IF NOT EXISTS polling_units (
@@ -48,6 +50,7 @@ const schema = [
     photo_url VARCHAR(500),
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    token_version INTEGER NOT NULL DEFAULT 0,
     language VARCHAR(10) NOT NULL DEFAULT 'en',
     last_login TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -309,8 +312,11 @@ const compatibility = [
   'ALTER TABLE candidates ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()',
   'ALTER TABLE result_submissions ADD COLUMN IF NOT EXISTS flag_reason TEXT',
   'ALTER TABLE result_submissions ADD COLUMN IF NOT EXISTS flagged_by INTEGER REFERENCES users(id) ON DELETE SET NULL',
+  'ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE result_submissions ADD COLUMN IF NOT EXISTS flagged_at TIMESTAMPTZ',
   'ALTER TABLE lgas ADD COLUMN IF NOT EXISTS state_id INTEGER',
+  'ALTER TABLE wards ADD COLUMN IF NOT EXISTS latitude NUMERIC(10, 7)',
+  'ALTER TABLE wards ADD COLUMN IF NOT EXISTS longitude NUMERIC(10, 7)',
   'ALTER TABLE registration_applications ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)',
   'ALTER TABLE registration_applications ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL',
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_registration_applications_user ON registration_applications(user_id) WHERE user_id IS NOT NULL`,

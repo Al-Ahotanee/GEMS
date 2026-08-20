@@ -21,7 +21,8 @@ function generateAccessToken(user) {
       role: user.role,
       lga_id: user.lga_id || null,
       ward_id: user.ward_id || null,
-      polling_unit_id: user.polling_unit_id || null
+      polling_unit_id: user.polling_unit_id || null,
+      token_version: Number(user.token_version || 0)
     },
     JWT_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRY, issuer: 'gsem-api' }
@@ -142,7 +143,7 @@ async function login(req, res) {
 
     // Find user by email or phone
     const [users] = await pool.query(
-      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, profile_photo_url, email_verified, password_hash FROM users WHERE (email = ? OR phone = ?) LIMIT 1',
+      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, profile_photo_url, email_verified, password_hash, token_version FROM users WHERE (email = ? OR phone = ?) LIMIT 1',
       [email || '', phone || '']
     );
 
@@ -257,7 +258,7 @@ async function refreshToken(req, res) {
 
     // Get the user
     const [users] = await pool.query(
-      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, profile_photo_url, email_verified, password_hash FROM users WHERE id = ? AND status = ? LIMIT 1',
+      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, profile_photo_url, email_verified, password_hash, token_version FROM users WHERE id = ? AND status = ? LIMIT 1',
       [decoded.id, 'active']
     );
 
@@ -301,9 +302,13 @@ async function logout(req, res) {
   try {
     const userId = req.user.id;
 
-    // Revoke all refresh tokens for this user
+    // Revoke all refresh tokens and invalidate all access tokens issued before logout.
     const [result] = await pool.query(
-      'UPDATE refresh_tokens SET revoked = 1 WHERE user_id = ? AND revoked = 0',
+      'UPDATE refresh_tokens SET revoked = 1, revoked_at = NOW() WHERE user_id = ? AND revoked = 0',
+      [userId]
+    );
+    await pool.query(
+      'UPDATE users SET token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?',
       [userId]
     );
 
@@ -350,8 +355,8 @@ async function forgotPassword(req, res) {
       // Store the reset token hash in system_config
       const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
       await pool.query(
-        `INSERT INTO system_config (config_key, config_value, created_at, updated_at)
-         VALUES (?, ?, NOW(), NOW())
+        `INSERT INTO system_config (config_key, config_value, updated_at)
+         VALUES (?, ?, NOW())
          ON CONFLICT (config_key) DO UPDATE
          SET config_value = EXCLUDED.config_value, updated_at = NOW()`,
         [`password_reset_${user.id}`, JSON.stringify({
@@ -437,9 +442,13 @@ async function resetPassword(req, res) {
       [`password_reset_${decoded.id}`]
     );
 
-    // Revoke all existing refresh tokens for security
+    // Revoke every existing session after a credential reset.
     await pool.query(
-      'UPDATE refresh_tokens SET revoked = 1 WHERE user_id = ?',
+      'UPDATE refresh_tokens SET revoked = 1, revoked_at = NOW() WHERE user_id = ? AND revoked = 0',
+      [decoded.id]
+    );
+    await pool.query(
+      'UPDATE users SET token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?',
       [decoded.id]
     );
 

@@ -26,7 +26,7 @@ const privacyController = require('../controllers/privacy.controller');
 // Auth rate limiter (stricter)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: Number(process.env.AUTH_RATE_LIMIT_MAX || 20),
   message: { success: false, message: 'Too many auth attempts, please try again later.' }
 });
 

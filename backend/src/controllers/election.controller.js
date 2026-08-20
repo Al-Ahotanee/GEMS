@@ -106,13 +106,12 @@ async function createElection(req, res) {
       return ApiResponse.forbidden(res, 'Only super administrators can create elections');
     }
 
-    const electionId = uuidv4();
-
-    await pool.query(
-      `INSERT INTO elections (id, title, election_type, election_date, election_year, description, status, created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [electionId, title, election_type, election_date, election_year, description || null, status || 'upcoming', req.user.id]
+    const [{ insertId: electionId }] = await pool.query(
+      `INSERT INTO elections (title, election_type, election_date, election_year, description, status, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [title, election_type, election_date, election_year, description || null, status || 'upcoming', req.user.id]
     );
+    if (!electionId) throw new Error('Election id was not returned after insert');
 
     // Audit log
     await pool.query(
@@ -248,13 +247,12 @@ async function createCandidate(req, res) {
       return ApiResponse.conflict(res, `A candidate from ${party_code} already exists for this election`);
     }
 
-    const candidateId = uuidv4();
-
-    await pool.query(
-      `INSERT INTO candidates (id, election_id, full_name, party_name, party_code, photo_url, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [candidateId, election_id, candidate_name, party_name, party_code, photo_url || null]
+    const [{ insertId: candidateId }] = await pool.query(
+      `INSERT INTO candidates (election_id, full_name, party_name, party_code, photo_url, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+      [election_id, candidate_name, party_name, party_code, photo_url || null]
     );
+    if (!candidateId) throw new Error('Candidate id was not returned after insert');
 
     // Audit log
     await pool.query(

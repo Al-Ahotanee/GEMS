@@ -146,7 +146,13 @@ async function seed() {
     }
     console.log(`Seed complete: ${JSON.stringify(counts)}`);
   } catch (error) {
-    console.error('Seed failed:', error.message);
+    console.error('Seed failed:', {
+      message: error?.message || String(error),
+      code: error?.code,
+      detail: error?.detail,
+      constraint: error?.constraint,
+      stack: error?.stack,
+    });
     process.exitCode = 1;
   } finally {
     await pool.end();
