@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: #080d0a;
+    color: #e8f5ee;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Syne', sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0d1610;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #1a5632;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #22753f;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-dark-surface/80 backdrop-blur-md border border-dark-border rounded-xl;
+  }
+
+  .glass-card-accent {
+    @apply bg-dark-surface/60 backdrop-blur-lg border border-primary-500/20 rounded-xl;
+    box-shadow: 0 0 30px rgba(26, 86, 50, 0.1);
+  }
+
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 text-white font-semibold py-2.5 px-6 rounded-lg transition-all duration-200 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/40 active:scale-95;
+  }
+
+  .btn-accent {
+    @apply bg-accent-500 hover:bg-accent-600 text-dark-bg font-semibold py-2.5 px-6 rounded-lg transition-all duration-200 shadow-lg shadow-accent-500/20 hover:shadow-accent-500/40 active:scale-95;
+  }
+
+  .btn-outline {
+    @apply border border-primary-500/50 text-primary-100 hover:bg-primary-500/10 font-semibold py-2.5 px-6 rounded-lg transition-all duration-200 active:scale-95;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-all duration-200 active:scale-95;
+  }
+
+  .input-field {
+    @apply w-full bg-dark-surface-2 border border-dark-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/50 transition-all duration-200;
+  }
+
+  .label-text {
+    @apply block text-sm font-medium text-text-secondary mb-1.5;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-dark-surface-2 transition-all duration-200;
+  }
+
+  .sidebar-link-active {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-accent-500 bg-primary-500/10 border-r-2 border-accent-500;
+  }
+
+  .stat-card {
+    @apply glass-card p-5 hover:border-primary-500/30 transition-all duration-300;
+  }
+
+  .table-header {
+    @apply text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3 px-4;
+  }
+
+  .table-cell {
+    @apply py-3 px-4 text-sm text-text-secondary border-t border-dark-border;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge bg-green-500/20 text-green-400;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-500/20 text-yellow-400;
+  }
+
+  .badge-danger {
+    @apply badge bg-red-500/20 text-red-400;
+  }
+
+  .badge-info {
+    @apply badge bg-blue-500/20 text-blue-400;
+  }
+
+  .badge-neutral {
+    @apply badge bg-gray-500/20 text-gray-400;
+  }
+}
+
+/* Leaflet overrides for dark theme */
+.leaflet-container {
+  background: #0d1610 !important;
+}
+
+.leaflet-tile-pane {
+  filter: brightness(0.7) contrast(1.1) saturate(0.8) hue-rotate(90deg);
+}
+
+.leaflet-popup-content-wrapper {
+  background: #132018 !important;
+  color: #e8f5ee !important;
+  border: 1px solid rgba(26, 86, 50, 0.3) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-popup-tip {
+  background: #132018 !important;
+}
+
+.leaflet-control-zoom a {
+  background: #132018 !important;
+  color: #e8f5ee !important;
+  border-color: rgba(26, 86, 50, 0.3) !important;
+}
+
+/* Print Styles for EC8A layout */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .glass-card, .glass-card-accent {
+    background: none !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    color: black !important;
+  }
+  .text-text-primary, .text-text-secondary, .text-text-muted, .text-accent-500 {
+    color: black !important;
+  }
+}
