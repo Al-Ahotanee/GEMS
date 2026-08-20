@@ -45,9 +45,10 @@ The API health endpoint is `GET /health`. It returns `200` only when the applica
 2. Create a Render Blueprint from the repository. Render reads `render.yaml` and creates the `gsem` web service.
 3. In the service environment, set `DATABASE_URL` to the Neon connection string and `FRONTEND_URL` to the public Render URL, for example `https://gsem.onrender.com`.
 4. Keep the generated `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `HMAC_SECRET` values private. Do not commit `.env` files or credentials.
-5. Run the schema bootstrap once after the first deployment with `npm run migrate`; run `npm run seed` only when the initial reference data is required.
+5. The Blueprint intentionally does not use `preDeployCommand`, because Render Free does not support pre-deploy commands for Free services. Instead, its start command is `npm run migrate && npm start`. The idempotent PostgreSQL migration runs before every service start, including the first deployment and later restarts.
+6. Run `npm run seed` once from your local computer against the Neon `DATABASE_URL` only when initial reference data is required. Do not add seeding to the Render start command.
 
-The Blueprint uses `npm ci && npm run build` as its build command, `npm start` as its start command, and `/health` as its health check. Render supplies the runtime `PORT`; the server listens on `0.0.0.0` by default.
+The Blueprint uses `npm ci && npm run build` as its build command, `npm run migrate && npm start` as its start command, and `/health` as its health check. Render supplies the runtime `PORT`; the server listens on `0.0.0.0` by default.
 
 ## Optional integrations
 
