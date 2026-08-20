@@ -34,7 +34,8 @@ const generatePDF = async (req, res) => {
     doc.moveDown(0.5);
 
     const [candidates] = await pool.query(
-      `SELECT c.full_name, c.party_code, c.party_name, COALESCE(SUM(vd.votes), 0) as total_votes
+      `SELECT c.full_name, c.party_code, c.party_name,
+              COALESCE(SUM(CASE WHEN rs.id IS NOT NULL THEN vd.votes ELSE 0 END), 0) AS total_votes
        FROM candidates c
        LEFT JOIN vote_data vd ON vd.candidate_id = c.id
        LEFT JOIN result_submissions rs ON rs.id = vd.submission_id AND rs.status = 'verified' AND rs.election_id = ?
@@ -63,7 +64,7 @@ const generatePDF = async (req, res) => {
     const [lgaSummary] = await pool.query(
       `SELECT l.name, 
               (SELECT COUNT(*) FROM polling_units WHERE lga_id = l.id) as total_pus,
-              (SELECT COUNT(*) FROM result_submissions WHERE lga_id = l.id AND election_id = ?) as reported,
+              (SELECT COUNT(*) FROM result_submissions WHERE lga_id = l.id AND election_id = ? AND status <> 'rejected') AS reported,
               (SELECT COUNT(*) FROM result_submissions WHERE lga_id = l.id AND election_id = ? AND status = 'verified') as verified
        FROM lgas l WHERE 1=1 ${lgaFilter} ORDER BY l.name`,
       lgaParams
@@ -137,7 +138,8 @@ const generateExcel = async (req, res) => {
     ];
 
     const [candidates] = await pool.query(
-      `SELECT c.full_name, c.party_code, COALESCE(SUM(vd.votes), 0) AS total_votes
+      `SELECT c.full_name, c.party_code,
+              COALESCE(SUM(CASE WHEN rs.id IS NOT NULL THEN vd.votes ELSE 0 END), 0) AS total_votes
        FROM candidates c
        LEFT JOIN vote_data vd ON vd.candidate_id = c.id
        LEFT JOIN result_submissions rs ON rs.id = vd.submission_id AND rs.status = 'verified' AND rs.election_id = ?
@@ -158,7 +160,7 @@ const generateExcel = async (req, res) => {
     const [lgaData] = await pool.query(
       `SELECT l.name,
               (SELECT COUNT(*) FROM polling_units WHERE lga_id = l.id) AS total,
-              (SELECT COUNT(*) FROM result_submissions WHERE lga_id = l.id AND election_id = ?) AS reported,
+              (SELECT COUNT(*) FROM result_submissions WHERE lga_id = l.id AND election_id = ? AND status <> 'rejected') AS reported,
               (SELECT COUNT(*) FROM result_submissions WHERE lga_id = l.id AND election_id = ? AND status = 'verified') AS verified
        FROM lgas l ORDER BY l.name`,
       [election.id, election.id]

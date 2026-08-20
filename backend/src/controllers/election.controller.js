@@ -34,8 +34,14 @@ async function listElections(req, res) {
     query += ' ORDER BY e.election_date DESC';
 
     const [elections] = await pool.query(query, params);
+    const normalizedElections = elections.map((election) => ({
+      ...election,
+      candidate_count: Number(election.candidate_count || 0),
+      submission_count: Number(election.submission_count || 0),
+      election_year: Number(election.election_year || 0),
+    }));
 
-    return ApiResponse.success(res, elections);
+    return ApiResponse.success(res, normalizedElections);
 
   } catch (error) {
     logger.error('List elections error:', error);
@@ -67,14 +73,17 @@ async function getElection(req, res) {
       LEFT JOIN vote_data vd ON vd.candidate_id = c.id 
         AND vd.submission_id IN (
           SELECT rs.id FROM result_submissions rs 
-          WHERE rs.election_id = ? AND rs.status IN ('verified', 'submitted')
+          WHERE rs.election_id = ? AND rs.status = 'verified'
         )
       WHERE c.election_id = ?
       GROUP BY c.id
       ORDER BY total_votes DESC
     `, [id, id]);
 
-    election.candidates = candidates;
+    election.candidates = candidates.map((candidate) => ({
+      ...candidate,
+      total_votes: Number(candidate.total_votes || 0),
+    }));
 
     return ApiResponse.success(res, election);
 
@@ -167,8 +176,9 @@ async function updateElection(req, res) {
     const [updated] = await pool.query('SELECT id, title, election_type, election_date, election_year, description, status, created_at, updated_at FROM elections WHERE id = ?', [id]);
 
     // Clear related caches
-    cache.del('public:situation_room');
-    cache.del('dashboard:state');
+    cache.del('situation_room');
+    cache.del('state_dash_latest');
+    cache.del(`state_dash_${id}`);
 
     return ApiResponse.success(res, updated[0], 'Election updated successfully');
 
@@ -203,7 +213,10 @@ async function listCandidates(req, res) {
       ORDER BY c.party_name ASC
     `, [election_id, election_id]);
 
-    return ApiResponse.success(res, candidates);
+    return ApiResponse.success(res, candidates.map((candidate) => ({
+      ...candidate,
+      total_votes: Number(candidate.total_votes || 0),
+    })));
 
   } catch (error) {
     logger.error('List candidates error:', error);
@@ -303,14 +316,14 @@ async function deleteCandidate(req, res) {
   try {
     const { id } = req.params;
 
-    const [existing] = await pool.query('SELECT id FROM candidates WHERE id = ?', [id]);
+    const [existing] = await pool.query('SELECT id, full_name FROM candidates WHERE id = ?', [id]);
     if (existing.length === 0) {
       return ApiResponse.notFound(res, 'Candidate not found');
     }
 
     // Check if candidate has any votes recorded
     const [votes] = await pool.query('SELECT COUNT(*) AS count FROM vote_data WHERE candidate_id = ?', [id]);
-    if (votes[0].count > 0) {
+    if (Number(votes[0]?.count || 0) > 0) {
       return ApiResponse.badRequest(res, 'Cannot delete candidate with recorded votes. Remove vote data first.');
     }
 
@@ -320,7 +333,7 @@ async function deleteCandidate(req, res) {
     await pool.query(
       `INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, new_value, ip_address, created_at)
        VALUES (?, ?, 'delete', 'candidate', ?, ?, ?, NOW())`,
-      [uuidv4(), req.user.id, id, JSON.stringify({ candidate_name: existing[0].candidate_name }), req.ip]
+      [uuidv4(), req.user.id, id, JSON.stringify({ candidate_name: existing[0].full_name }), req.ip]
     );
 
     logger.info(`Candidate deleted: ${id}`);

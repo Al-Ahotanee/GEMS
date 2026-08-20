@@ -13,7 +13,7 @@ const raiseDispute = async (req, res) => {
     // Get election
     let elId = election_id;
     if (!elId) {
-      const [els] = await pool.query('SELECT id FROM elections WHERE status = "ongoing" LIMIT 1');
+      const [els] = await pool.query("SELECT id FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1");
       if (els.length) elId = els[0].id;
       else return ApiResponse.badRequest(res, 'No active election found');
     }
@@ -57,7 +57,7 @@ const listDisputes = async (req, res) => {
     }
 
     const [countResult] = await pool.query(`SELECT COUNT(*) as total FROM disputes d ${where}`, params);
-    const total = countResult[0].total;
+    const total = Number(countResult[0]?.total || 0);
 
     const [disputes] = await pool.query(
       `SELECT d.*, CONCAT(u.first_name, ' ', u.last_name) as raiser_name,
@@ -181,7 +181,7 @@ const escalateDispute = async (req, res) => {
     const newLevel = levels[disputes[0].escalation_level] || 'state';
 
     await pool.query(
-      'UPDATE disputes SET escalation_level = ?, status = "escalated" WHERE id = ?',
+      "UPDATE disputes SET escalation_level = ?, status = 'escalated' WHERE id = ?",
       [newLevel, id]
     );
 

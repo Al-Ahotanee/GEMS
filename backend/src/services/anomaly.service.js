@@ -65,7 +65,7 @@ class AnomalyService {
 
           // Flag the submission
           await connection.query(
-            'UPDATE result_submissions SET is_anomalous = TRUE, status = "flagged" WHERE id = ?',
+            "UPDATE result_submissions SET is_anomalous = TRUE, status = 'flagged' WHERE id = ?",
             [submissionId]
           );
 
@@ -126,39 +126,47 @@ class AnomalyService {
     
     return {
       data: rows,
-      total: countRows[0].total
+      total: Number(countRows[0]?.total || 0)
     };
   }
 
   static async resolveAnomaly(id, status, userId) {
-    const [result] = await pool.query(
-      'UPDATE anomalies SET status = ?, resolved_by = ?, resolved_at = NOW() WHERE id = ?',
-      [status, userId, id]
-    );
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
 
-    if (result.affectedRows === 0) {
-      throw new Error('Anomaly not found');
-    }
+      const [anomalies] = await connection.query(
+        'SELECT id, submission_id, status FROM anomalies WHERE id = ? FOR UPDATE',
+        [id]
+      );
+      if (!anomalies.length) throw new Error('Anomaly not found');
 
-    // Check if there are other open anomalies for the same submission
-    const [anomaly] = await pool.query('SELECT submission_id FROM anomalies WHERE id = ?', [id]);
-    if (anomaly.length > 0) {
-      const submissionId = anomaly[0].submission_id;
-      const [openAnomalies] = await pool.query(
-        'SELECT id FROM anomalies WHERE submission_id = ? AND status = "open"',
+      await connection.query(
+        'UPDATE anomalies SET status = ?, resolved_by = ?, resolved_at = NOW() WHERE id = ?',
+        [status, userId, id]
+      );
+
+      const submissionId = anomalies[0].submission_id;
+      const [openAnomalies] = await connection.query(
+        "SELECT id FROM anomalies WHERE submission_id = ? AND status = 'open'",
         [submissionId]
       );
 
-      // If all anomalies are resolved, we can clear the is_anomalous flag
       if (openAnomalies.length === 0) {
-        await pool.query(
-          'UPDATE result_submissions SET is_anomalous = FALSE WHERE id = ?',
+        await connection.query(
+          "UPDATE result_submissions SET is_anomalous = FALSE, status = CASE WHEN status = 'flagged' THEN 'pending' ELSE status END WHERE id = ?",
           [submissionId]
         );
       }
-    }
 
-    return true;
+      await connection.commit();
+      return true;
+    } catch (error) {
+      await connection.rollback().catch(() => undefined);
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 }
 

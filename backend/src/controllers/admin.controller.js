@@ -1,5 +1,6 @@
 const { pool } = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 const ApiResponse = require('../utils/response');
 const logger = require('../utils/logger');
 const notificationService = require('../services/notification.service');
@@ -102,7 +103,7 @@ const updateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    await pool.query('UPDATE users SET status = "inactive" WHERE id = ?', [parseInt(req.params.id)]);
+    await pool.query("UPDATE users SET status = 'inactive' WHERE id = ?", [parseInt(req.params.id, 10)]);
     return ApiResponse.success(res, null, 'User deactivated');
   } catch (error) {
     logger.error('Delete user error:', error);
@@ -112,6 +113,27 @@ const deleteUser = async (req, res) => {
 
 const listApplications = async (req, res) => {
   try {
+    // Keep the review queue authoritative even when a deployment predates the
+    // registration_applications migration. This is idempotent and preserves the
+    // original pending user record through user_id.
+    await pool.query(
+      `INSERT INTO registration_applications
+        (email, phone, first_name, last_name, requested_role, password_hash, user_id,
+         lga_id, ward_id, polling_unit_id, nin, status, created_at, updated_at)
+       SELECT u.email, u.phone, u.first_name, u.last_name, u.role, u.password_hash, u.id,
+              u.lga_id, u.ward_id, u.polling_unit_id, u.nin, 'pending', u.created_at, u.updated_at
+       FROM users u
+       WHERE u.status = 'pending'
+         AND u.role <> 'super_admin'
+         AND NOT EXISTS (
+           SELECT 1 FROM registration_applications ra
+           WHERE ra.user_id = u.id
+              OR (ra.user_id IS NULL AND ra.status = 'pending'
+                  AND ra.email IS NOT DISTINCT FROM u.email
+                  AND ra.phone IS NOT DISTINCT FROM u.phone)
+         )`
+    );
+
     const { page = 1, limit = 20, status } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     let where = 'WHERE 1=1';
@@ -121,7 +143,11 @@ const listApplications = async (req, res) => {
     const [countResult] = await pool.query(`SELECT COUNT(*) as total FROM registration_applications ra ${where}`, params);
 
     const [apps] = await pool.query(
-      `SELECT ra.*, l.name as lga_name, w.name as ward_name, pu.name as polling_unit_name
+      `SELECT ra.id, ra.user_id, ra.email, ra.phone, ra.first_name, ra.last_name,
+              ra.requested_role, ra.lga_id, ra.ward_id, ra.polling_unit_id, ra.nin,
+              ra.accreditation_doc_url, ra.status, ra.reviewed_by, ra.review_notes,
+              ra.created_at, ra.updated_at,
+              l.name AS lga_name, w.name AS ward_name, pu.name AS polling_unit_name
        FROM registration_applications ra
        LEFT JOIN lgas l ON l.id = ra.lga_id
        LEFT JOIN wards w ON w.id = ra.ward_id
@@ -130,7 +156,7 @@ const listApplications = async (req, res) => {
       [...params, parseInt(limit), offset]
     );
 
-    return ApiResponse.paginated(res, apps, { page: parseInt(page), limit: parseInt(limit), total: countResult[0].total });
+    return ApiResponse.paginated(res, apps, { page: parseInt(page, 10), limit: parseInt(limit, 10), total: Number(countResult[0]?.total || 0) });
   } catch (error) {
     logger.error('List applications error:', error);
     return ApiResponse.error(res, 'Failed to list applications');
@@ -138,45 +164,107 @@ const listApplications = async (req, res) => {
 };
 
 const reviewApplication = async (req, res) => {
+  const id = Number.parseInt(req.params.id, 10);
+  const { status, review_notes } = req.body;
+  if (!Number.isInteger(id) || !['approved', 'rejected'].includes(status)) {
+    return ApiResponse.badRequest(res, 'A valid application id and approved/rejected status are required');
+  }
+
+  let client;
   try {
-    const id = parseInt(req.params.id);
-    const { status, review_notes } = req.body;
-    if (!['approved', 'rejected'].includes(status)) return ApiResponse.badRequest(res, 'Status must be approved or rejected');
+    client = await pool.getConnection();
+    await client.beginTransaction();
 
-    const [apps] = await pool.query('SELECT id, email, phone, first_name, last_name, requested_role, lga_id, ward_id, polling_unit_id FROM registration_applications WHERE id = ?', [id]);
-    if (!apps.length) return ApiResponse.notFound(res, 'Application not found');
-    const app = apps[0];
-
-    await pool.query(
-      'UPDATE registration_applications SET status = ?, reviewed_by = ?, review_notes = ? WHERE id = ?',
-      [status, req.user.id, review_notes || '', id]
+    const [apps] = await client.query(
+      `SELECT id, user_id, email, phone, password_hash, first_name, last_name, requested_role,
+              lga_id, ward_id, polling_unit_id, nin, status
+       FROM registration_applications
+       WHERE id = ?
+       FOR UPDATE`,
+      [id]
     );
+    if (!apps.length) {
+      await client.rollback();
+      return ApiResponse.notFound(res, 'Application not found');
+    }
+
+    const app = apps[0];
+    if (app.status !== 'pending') {
+      await client.rollback();
+      return ApiResponse.conflict(res, `Application has already been ${app.status}`);
+    }
+
+    let userId = app.user_id || null;
+    let tempPassword = null;
 
     if (status === 'approved') {
-      const tempPassword = `GSEM${Date.now().toString(36)}!`;
-      const hash = await bcrypt.hash(tempPassword, 12);
-      const [userResult] = await pool.query(
-        `INSERT INTO users (email, phone, password_hash, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, email_verified)
-         VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, TRUE)`,
-        [app.email, app.phone, hash, app.first_name, app.last_name, app.requested_role, app.lga_id, app.ward_id, app.polling_unit_id]
-      );
-
-      if (app.email) {
-        notificationService.sendEmail(app.email, 'Application Approved',
-          `<h3>Welcome to GSEM!</h3><p>Your application has been approved. Your temporary password is: <strong>${tempPassword}</strong></p><p>Please change it after login.</p>`);
+      if (userId) {
+        await client.query(
+          `UPDATE users
+           SET email = ?, phone = ?, first_name = ?, last_name = ?, role = ?, status = 'active',
+               lga_id = ?, ward_id = ?, polling_unit_id = ?, nin = COALESCE(?, nin),
+               password_hash = COALESCE(?, password_hash), email_verified = TRUE, updated_at = NOW()
+           WHERE id = ?`,
+          [app.email, app.phone, app.first_name, app.last_name, app.requested_role,
+            app.lga_id, app.ward_id, app.polling_unit_id, app.nin, app.password_hash, userId]
+        );
+      } else {
+        tempPassword = `GSEM${Date.now().toString(36)}!`;
+        const hash = app.password_hash || await bcrypt.hash(tempPassword, 12);
+        const [userResult] = await client.query(
+          `INSERT INTO users
+            (email, phone, password_hash, first_name, last_name, role, status,
+             lga_id, ward_id, polling_unit_id, nin, email_verified, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, TRUE, NOW(), NOW())
+           RETURNING id`,
+          [app.email, app.phone, hash, app.first_name, app.last_name, app.requested_role,
+            app.lga_id, app.ward_id, app.polling_unit_id, app.nin || null]
+        );
+        userId = userResult.insertId;
       }
-      return ApiResponse.success(res, { userId: userResult.insertId, tempPassword }, 'Application approved, user account created');
+    } else if (userId) {
+      // Legacy registrations created a pending user before the application-table fix.
+      // Keep the account disabled when the administrator rejects the application.
+      await client.query('UPDATE users SET status = \'inactive\', updated_at = NOW() WHERE id = ?', [userId]);
     }
+
+    await client.query(
+      `UPDATE registration_applications
+       SET status = ?, user_id = COALESCE(user_id, ?), reviewed_by = ?, review_notes = ?, updated_at = NOW()
+       WHERE id = ?`,
+      [status, userId, req.user.id, review_notes || null, id]
+    );
+
+    await client.query(
+      `INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, new_value, ip_address, user_agent, created_at)
+       VALUES (?, ?, 'review', 'application', ?, ?, ?, ?, NOW())`,
+      [uuidv4(), req.user.id, id, JSON.stringify({ status, user_id: userId, review_notes: review_notes || null }), req.ip, req.get('user-agent') || null]
+    );
+
+    await client.commit();
 
     if (app.email) {
-      notificationService.sendEmail(app.email, 'Application Status Update',
-        `<p>Your GSEM application has been ${status}.</p>${review_notes ? `<p>Notes: ${review_notes}</p>` : ''}`);
+      if (status === 'approved') {
+        notificationService.sendEmail(app.email, 'Application Approved',
+          `<h3>Welcome to GSEM!</h3><p>Your application has been approved.</p>${tempPassword ? `<p>Your temporary password is: <strong>${tempPassword}</strong></p><p>Please change it after login.</p>` : ''}`);
+      } else {
+        notificationService.sendEmail(app.email, 'Application Status Update',
+          `<p>Your GSEM application has been rejected.</p>${review_notes ? `<p>Notes: ${review_notes}</p>` : ''}`);
+      }
     }
-    return ApiResponse.success(res, null, `Application ${status}`);
+
+    return ApiResponse.success(
+      res,
+      { userId, tempPassword },
+      status === 'approved' ? 'Application approved and account activated' : 'Application rejected'
+    );
   } catch (error) {
+    if (client) await client.rollback().catch(() => undefined);
     if (error.code === '23505' || error.code === 'ER_DUP_ENTRY') return ApiResponse.conflict(res, 'User with this email/phone already exists');
     logger.error('Review application error:', error);
     return ApiResponse.error(res, 'Failed to review application');
+  } finally {
+    if (client) client.release();
   }
 };
 
@@ -202,7 +290,7 @@ const listAuditLogs = async (req, res) => {
       [...params, parseInt(limit), offset]
     );
 
-    return ApiResponse.paginated(res, logs, { page: parseInt(page), limit: parseInt(limit), total: countResult[0].total });
+    return ApiResponse.paginated(res, logs, { page: parseInt(page), limit: parseInt(limit), total: Number(countResult[0]?.total || 0) });
   } catch (error) {
     logger.error('List audit logs error:', error);
     return ApiResponse.error(res, 'Failed to list audit logs');
@@ -241,20 +329,40 @@ const updateSystemConfig = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
   try {
-    const [usersByRole] = await pool.query(
-      'SELECT role, COUNT(*) as count FROM users GROUP BY role'
+    // Keep the dashboard badge consistent with the review queue on databases
+    // that contain legacy pending users created before registration_applications.
+    await pool.query(
+      `INSERT INTO registration_applications
+        (email, phone, first_name, last_name, requested_role, password_hash, user_id,
+         lga_id, ward_id, polling_unit_id, nin, status, created_at, updated_at)
+       SELECT u.email, u.phone, u.first_name, u.last_name, u.role, u.password_hash, u.id,
+              u.lga_id, u.ward_id, u.polling_unit_id, u.nin, 'pending', u.created_at, u.updated_at
+       FROM users u
+       WHERE u.status = 'pending'
+         AND u.role <> 'super_admin'
+         AND NOT EXISTS (
+           SELECT 1 FROM registration_applications ra
+           WHERE ra.user_id = u.id
+              OR (ra.user_id IS NULL AND ra.status = 'pending'
+                  AND ra.email IS NOT DISTINCT FROM u.email
+                  AND ra.phone IS NOT DISTINCT FROM u.phone)
+         )`
     );
-    const [totalSubmissions] = await pool.query('SELECT COUNT(*) as count FROM result_submissions');
-    const [pendingReviews] = await pool.query('SELECT COUNT(*) as count FROM result_submissions WHERE status = "pending"');
-    const [activeDisputes] = await pool.query('SELECT COUNT(*) as count FROM disputes WHERE status IN ("open","investigating","escalated")');
-    const [pendingApps] = await pool.query('SELECT COUNT(*) as count FROM registration_applications WHERE status = "pending"');
+
+    const [usersByRole] = await pool.query(
+      'SELECT role, COUNT(*)::INTEGER as count FROM users GROUP BY role'
+    );
+    const [totalSubmissions] = await pool.query('SELECT COUNT(*)::INTEGER as count FROM result_submissions');
+    const [pendingReviews] = await pool.query("SELECT COUNT(*)::INTEGER as count FROM result_submissions WHERE status = 'pending'");
+    const [activeDisputes] = await pool.query("SELECT COUNT(*)::INTEGER as count FROM disputes WHERE status IN ('open','investigating','escalated')");
+    const [pendingApps] = await pool.query("SELECT COUNT(*)::INTEGER as count FROM registration_applications WHERE status = 'pending'");
 
     return ApiResponse.success(res, {
-      users_by_role: usersByRole,
-      total_submissions: totalSubmissions[0].count,
-      pending_reviews: pendingReviews[0].count,
-      active_disputes: activeDisputes[0].count,
-      pending_applications: pendingApps[0].count
+      users_by_role: usersByRole.map((row) => ({ ...row, count: Number(row.count) })),
+      total_submissions: Number(totalSubmissions[0]?.count || 0),
+      pending_reviews: Number(pendingReviews[0]?.count || 0),
+      active_disputes: Number(activeDisputes[0]?.count || 0),
+      pending_applications: Number(pendingApps[0]?.count || 0)
     });
   } catch (error) {
     logger.error('Admin stats error:', error);

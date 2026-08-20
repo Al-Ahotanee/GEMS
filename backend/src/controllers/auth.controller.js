@@ -54,7 +54,14 @@ async function register(req, res) {
       return ApiResponse.badRequest(res, 'Password must be at least 8 characters');
     }
 
-    // Check for existing user by email or phone
+    const finalRole = requested_role || 'pu_agent';
+    const allowedRoles = new Set(['pu_agent', 'ward_officer', 'lga_coordinator', 'observer']);
+    if (!allowedRoles.has(finalRole)) {
+      return ApiResponse.badRequest(res, 'Invalid registration role');
+    }
+
+    // Check both approved accounts and existing pending applications. This prevents
+    // duplicate submissions while keeping the review queue authoritative.
     if (email) {
       const [existingEmail] = await pool.query(
         'SELECT id FROM users WHERE email = ? LIMIT 1',
@@ -75,38 +82,49 @@ async function register(req, res) {
       }
     }
 
-    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const finalRole = requested_role || 'pu_agent';
+    const applicationConditions = [];
+    const applicationParams = [];
+    if (email) { applicationConditions.push('email = ?'); applicationParams.push(email); }
+    if (phone) { applicationConditions.push('phone = ?'); applicationParams.push(phone); }
+    const [existingApplications] = await pool.query(
+      `SELECT id FROM registration_applications WHERE status = 'pending' AND (${applicationConditions.join(' OR ')}) LIMIT 1`,
+      applicationParams
+    );
+    if (existingApplications.length > 0) {
+      return ApiResponse.conflict(res, 'A pending application already exists for this contact');
+    }
 
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const [insertResult] = await pool.query(
-      `INSERT INTO users (email, phone, password_hash, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, NOW(), NOW())`,
+      `INSERT INTO registration_applications
+        (email, phone, password_hash, first_name, last_name, requested_role, lga_id, ward_id, polling_unit_id, nin, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
+       RETURNING id`,
       [
         email || null, phone || null, hashedPassword, first_name, last_name, finalRole,
-        lga_id || null, ward_id || null, polling_unit_id || null
+        lga_id || null, ward_id || null, polling_unit_id || null, req.body.nin || null
       ]
     );
 
-    const userId = insertResult.insertId;
+    const applicationId = insertResult.insertId;
 
-    // Log the registration
     await pool.query(
-      `INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, new_value, ip_address, created_at)
-       VALUES (?, ?, 'register', 'user', ?, ?, ?, NOW())`,
-      [uuidv4(), userId, userId, JSON.stringify({ email, phone }), req.ip]
+      `INSERT INTO audit_logs (id, action, resource_type, resource_id, new_value, ip_address, user_agent, created_at)
+       VALUES (?, 'register', 'application', ?, ?, ?, ?, NOW())`,
+      [uuidv4(), applicationId, JSON.stringify({ email, phone, requested_role: finalRole }), req.ip, req.get('user-agent') || null]
     );
 
-    logger.info(`New user registered: ${userId} (${email || phone})`);
+    logger.info(`New registration application submitted: ${applicationId} (${email || phone})`);
 
     return ApiResponse.created(res, {
-      id: userId,
+      id: applicationId,
       email: email || null,
       phone: phone || null,
       first_name,
       last_name,
       status: 'pending',
-      role: 'field_agent'
-    }, 'Registration successful. Your account is pending approval.');
+      role: finalRole
+    }, 'Registration successful. Your application is pending approval.');
 
   } catch (error) {
     logger.error('Registration error:', error);

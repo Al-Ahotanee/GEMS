@@ -10,17 +10,21 @@ const getStateDashboard = async (req, res) => {
     const cached = cache.get(cacheKey);
     if (cached) return ApiResponse.success(res, cached);
 
-    // Get active election
-    let electionQuery = 'SELECT id, title, election_date, status FROM elections WHERE status = "ongoing" LIMIT 1';
-    if (election_id) electionQuery = `SELECT id, title, election_date, status FROM elections WHERE id = ${parseInt(election_id)}`;
-    const [elections] = await pool.query(electionQuery);
+    // Get the requested election, otherwise the most recent ongoing election.
+    let electionQuery = "SELECT id, title, election_date, status FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1";
+    let electionParams = [];
+    if (election_id) {
+      electionQuery = 'SELECT id, title, election_date, status FROM elections WHERE id = ?';
+      electionParams = [Number.parseInt(election_id, 10)];
+    }
+    const [elections] = await pool.query(electionQuery, electionParams);
     if (!elections.length) return ApiResponse.notFound(res, 'No active election found');
     const election = elections[0];
 
     // Get candidates
     const [candidates] = await pool.query(
       `SELECT c.id, c.full_name, c.party_code, c.party_name, c.photo_url,
-              COALESCE(SUM(vd.votes), 0) as total_votes
+              COALESCE(SUM(CASE WHEN rs.id IS NOT NULL THEN vd.votes ELSE 0 END), 0) as total_votes
        FROM candidates c
        LEFT JOIN vote_data vd ON vd.candidate_id = c.id
        LEFT JOIN result_submissions rs ON rs.id = vd.submission_id AND rs.status = 'verified' AND rs.election_id = ?
@@ -31,8 +35,8 @@ const getStateDashboard = async (req, res) => {
     const totalVerifiedVotes = candidates.reduce((s, c) => s + Number(c.total_votes), 0);
     const candidateResults = candidates.map(c => ({
       ...c,
-      total_votes: Number(c.total_votes),
-      vote_percentage: totalVerifiedVotes > 0 ? ((Number(c.total_votes) / totalVerifiedVotes) * 100).toFixed(2) : '0.00'
+      total_votes: Number(c.total_votes || 0),
+      vote_percentage: totalVerifiedVotes > 0 ? Number(((Number(c.total_votes || 0) / totalVerifiedVotes) * 100).toFixed(2)) : 0
     }));
 
     // Get LGA breakdown
@@ -40,18 +44,23 @@ const getStateDashboard = async (req, res) => {
       `SELECT l.id as lga_id, l.name as lga_name,
               (SELECT COUNT(*) FROM wards WHERE lga_id = l.id) as total_wards,
               (SELECT COUNT(*) FROM polling_units WHERE lga_id = l.id) as total_polling_units,
-              (SELECT COUNT(*) FROM result_submissions WHERE lga_id = l.id AND election_id = ?) as reported_polling_units,
+              (SELECT COUNT(*) FROM result_submissions WHERE lga_id = l.id AND election_id = ? AND status <> 'rejected') as reported_polling_units,
               (SELECT COUNT(*) FROM result_submissions WHERE lga_id = l.id AND election_id = ? AND status = 'verified') as verified_polling_units,
               (SELECT COALESCE(SUM(pu.registered_voters), 0) FROM polling_units pu WHERE pu.lga_id = l.id) as registered_voters
        FROM lgas l ORDER BY l.name`,
       [election.id, election.id]
     );
 
-    // Get per-LGA candidate votes
+    // Get per-LGA candidate votes.
     for (const lga of lgaData) {
+      lga.total_wards = Number(lga.total_wards || 0);
+      lga.total_polling_units = Number(lga.total_polling_units || 0);
+      lga.reported_polling_units = Number(lga.reported_polling_units || 0);
+      lga.verified_polling_units = Number(lga.verified_polling_units || 0);
+      lga.registered_voters = Number(lga.registered_voters || 0);
       const [lgaCandidates] = await pool.query(
         `SELECT c.id as candidate_id, c.full_name, c.party_code, c.party_name,
-                COALESCE(SUM(vd.votes), 0) as total_votes
+                COALESCE(SUM(CASE WHEN rs.id IS NOT NULL THEN vd.votes ELSE 0 END), 0) as total_votes
          FROM candidates c
          LEFT JOIN vote_data vd ON vd.candidate_id = c.id
          LEFT JOIN result_submissions rs ON rs.id = vd.submission_id AND rs.lga_id = ? AND rs.status = 'verified' AND rs.election_id = ?
@@ -60,7 +69,7 @@ const getStateDashboard = async (req, res) => {
         [lga.lga_id, election.id, election.id]
       );
       lga.candidates = lgaCandidates.map(c => ({ ...c, total_votes: Number(c.total_votes) }));
-      lga.reporting_percentage = lga.total_polling_units > 0 ? ((lga.reported_polling_units / lga.total_polling_units) * 100).toFixed(1) : '0.0';
+      lga.reporting_percentage = lga.total_polling_units > 0 ? Number(((lga.reported_polling_units / lga.total_polling_units) * 100).toFixed(1)) : 0;
     }
 
     // Totals
@@ -70,7 +79,7 @@ const getStateDashboard = async (req, res) => {
     const totalRegistered = lgaData.reduce((s, l) => s + Number(l.registered_voters), 0);
 
     const [votesCast] = await pool.query(
-      'SELECT COALESCE(SUM(total_votes_cast), 0) as total FROM result_submissions WHERE election_id = ? AND status = "verified"',
+      "SELECT COALESCE(SUM(total_votes_cast), 0) AS total FROM result_submissions WHERE election_id = ? AND status = 'verified'",
       [election.id]
     );
 
@@ -83,7 +92,7 @@ const getStateDashboard = async (req, res) => {
       verified_polling_units: verifiedPUs,
       total_registered_voters: totalRegistered,
       total_votes_cast: Number(votesCast[0].total),
-      turnout_percentage: totalRegistered > 0 ? ((Number(votesCast[0].total) / totalRegistered) * 100).toFixed(2) : '0.00',
+      turnout_percentage: totalRegistered > 0 ? Number(((Number(votesCast[0]?.total || 0) / totalRegistered) * 100).toFixed(2)) : 0,
       candidates: candidateResults,
       lgas: lgaData
     };
@@ -99,35 +108,42 @@ const getStateDashboard = async (req, res) => {
 // LGA Dashboard
 const getLGADashboard = async (req, res) => {
   try {
-    const lgaId = parseInt(req.params.id);
+    const lgaId = Number.parseInt(req.params.id, 10);
     const { election_id } = req.query;
 
     const [lgas] = await pool.query('SELECT id, name, state_id FROM lgas WHERE id = ?', [lgaId]);
     if (!lgas.length) return ApiResponse.notFound(res, 'LGA not found');
 
-    let electionQuery = 'SELECT id, title, election_date, status FROM elections WHERE status = "ongoing" LIMIT 1';
-    if (election_id) electionQuery = `SELECT id, title, election_date, status FROM elections WHERE id = ${parseInt(election_id)}`;
-    const [elections] = await pool.query(electionQuery);
+    let electionQuery = "SELECT id, title, election_date, status FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1";
+    let electionParams = [];
+    if (election_id) {
+      electionQuery = 'SELECT id, title, election_date, status FROM elections WHERE id = ?';
+      electionParams = [Number.parseInt(election_id, 10)];
+    }
+    const [elections] = await pool.query(electionQuery, electionParams);
     if (!elections.length) return ApiResponse.notFound(res, 'No active election');
     const election = elections[0];
 
     const [wards] = await pool.query(
       `SELECT w.id as ward_id, w.name as ward_name,
               (SELECT COUNT(*) FROM polling_units WHERE ward_id = w.id) as total_polling_units,
-              (SELECT COUNT(*) FROM result_submissions WHERE ward_id = w.id AND election_id = ?) as reported_polling_units,
+              (SELECT COUNT(*) FROM result_submissions WHERE ward_id = w.id AND election_id = ? AND status <> 'rejected') as reported_polling_units,
               (SELECT COUNT(*) FROM result_submissions WHERE ward_id = w.id AND election_id = ? AND status = 'verified') as verified_polling_units
        FROM wards w WHERE w.lga_id = ? ORDER BY w.name`,
       [election.id, election.id, lgaId]
     );
 
     for (const ward of wards) {
+      ward.total_polling_units = Number(ward.total_polling_units || 0);
+      ward.reported_polling_units = Number(ward.reported_polling_units || 0);
+      ward.verified_polling_units = Number(ward.verified_polling_units || 0);
       ward.reporting_percentage = ward.total_polling_units > 0
-        ? ((ward.reported_polling_units / ward.total_polling_units) * 100).toFixed(1) : '0.0';
+        ? Number(((ward.reported_polling_units / ward.total_polling_units) * 100).toFixed(1)) : 0;
     }
 
     const [candidates] = await pool.query(
       `SELECT c.id as candidate_id, c.full_name, c.party_code, c.party_name,
-              COALESCE(SUM(vd.votes), 0) as total_votes
+              COALESCE(SUM(CASE WHEN rs.id IS NOT NULL THEN vd.votes ELSE 0 END), 0) as total_votes
        FROM candidates c
        LEFT JOIN vote_data vd ON vd.candidate_id = c.id
        LEFT JOIN result_submissions rs ON rs.id = vd.submission_id AND rs.lga_id = ? AND rs.status = 'verified' AND rs.election_id = ?
@@ -151,7 +167,7 @@ const getLGADashboard = async (req, res) => {
 // Ward Dashboard
 const getWardDashboard = async (req, res) => {
   try {
-    const wardId = parseInt(req.params.id);
+    const wardId = Number.parseInt(req.params.id, 10);
     const { election_id } = req.query;
 
     const [wards] = await pool.query(
@@ -160,9 +176,13 @@ const getWardDashboard = async (req, res) => {
     );
     if (!wards.length) return ApiResponse.notFound(res, 'Ward not found');
 
-    let electionQuery = 'SELECT id, title, election_date, status FROM elections WHERE status = "ongoing" LIMIT 1';
-    if (election_id) electionQuery = `SELECT id, title, election_date, status FROM elections WHERE id = ${parseInt(election_id)}`;
-    const [elections] = await pool.query(electionQuery);
+    let electionQuery = "SELECT id, title, election_date, status FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1";
+    let electionParams = [];
+    if (election_id) {
+      electionQuery = 'SELECT id, title, election_date, status FROM elections WHERE id = ?';
+      electionParams = [Number.parseInt(election_id, 10)];
+    }
+    const [elections] = await pool.query(electionQuery, electionParams);
     if (!elections.length) return ApiResponse.notFound(res, 'No active election');
     const election = elections[0];
 
@@ -191,8 +211,10 @@ const getWardDashboard = async (req, res) => {
 const getAnomalies = async (req, res) => {
   try {
     const { election_id } = req.query;
-    let electionFilter = 'AND rs.election_id = (SELECT id FROM elections WHERE status = "ongoing" LIMIT 1)';
-    if (election_id) electionFilter = `AND rs.election_id = ${parseInt(election_id)}`;
+    let electionFilter = "AND rs.election_id = (SELECT id FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1)";
+    if (election_id && Number.isInteger(Number.parseInt(election_id, 10))) {
+      electionFilter = `AND rs.election_id = ${Number.parseInt(election_id, 10)}`;
+    }
 
     const [anomalies] = await pool.query(
       `SELECT rs.id as submission_id, rs.submission_uid, rs.total_votes_cast, rs.accredited_voters,

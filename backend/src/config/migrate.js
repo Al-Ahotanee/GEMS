@@ -70,6 +70,8 @@ const schema = [
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     requested_role VARCHAR(32) NOT NULL,
+    password_hash VARCHAR(255),
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     lga_id INTEGER REFERENCES lgas(id) ON DELETE SET NULL,
     ward_id INTEGER REFERENCES wards(id) ON DELETE SET NULL,
     polling_unit_id INTEGER REFERENCES polling_units(id) ON DELETE SET NULL,
@@ -309,6 +311,19 @@ const compatibility = [
   'ALTER TABLE result_submissions ADD COLUMN IF NOT EXISTS flagged_by INTEGER REFERENCES users(id) ON DELETE SET NULL',
   'ALTER TABLE result_submissions ADD COLUMN IF NOT EXISTS flagged_at TIMESTAMPTZ',
   'ALTER TABLE lgas ADD COLUMN IF NOT EXISTS state_id INTEGER',
+  'ALTER TABLE registration_applications ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)',
+  'ALTER TABLE registration_applications ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL',
+  `CREATE UNIQUE INDEX IF NOT EXISTS uq_registration_applications_user ON registration_applications(user_id) WHERE user_id IS NOT NULL`,
+  `INSERT INTO registration_applications (email, phone, first_name, last_name, requested_role, password_hash, user_id, lga_id, ward_id, polling_unit_id, nin, status, created_at, updated_at)
+   SELECT u.email, u.phone, u.first_name, u.last_name, u.role, u.password_hash, u.id, u.lga_id, u.ward_id, u.polling_unit_id, u.nin, 'pending', u.created_at, u.updated_at
+   FROM users u
+   WHERE u.status = 'pending'
+     AND u.role <> 'super_admin'
+     AND NOT EXISTS (
+       SELECT 1 FROM registration_applications ra
+       WHERE ra.user_id = u.id
+          OR (ra.user_id IS NULL AND ra.status = 'pending' AND ra.email IS NOT DISTINCT FROM u.email AND ra.phone IS NOT DISTINCT FROM u.phone)
+     )`,
 ];
 
 async function migrate() {

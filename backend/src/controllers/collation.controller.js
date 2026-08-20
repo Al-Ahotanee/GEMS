@@ -139,10 +139,10 @@ async function submitWardCollation(req, res) {
 
     await connection.commit();
 
-    // Invalidate caches
-    cache.del('public:situation_room');
-    cache.del('dashboard:state');
-    cache.del(`dashboard:lga:${ward.lga_id}`);
+    // Invalidate live dashboard caches.
+    cache.del('situation_room');
+    cache.del('state_dash_latest');
+    cache.del(`state_dash_${election_id}`);
 
     // Broadcast
     const io = req.app.get('io');
@@ -302,8 +302,9 @@ async function submitLGACollation(req, res) {
 
     await connection.commit();
 
-    cache.del('public:situation_room');
-    cache.del('dashboard:state');
+    cache.del('situation_room');
+    cache.del('state_dash_latest');
+    cache.del(`state_dash_${election_id}`);
 
     const io = req.app.get('io');
     if (io) {
@@ -436,8 +437,9 @@ async function submitStateCollation(req, res) {
 
     await connection.commit();
 
-    cache.del('public:situation_room');
-    cache.del('dashboard:state');
+    cache.del('situation_room');
+    cache.del('state_dash_latest');
+    cache.del(`state_dash_${election_id}`);
 
     const io = req.app.get('io');
     if (io) {
@@ -483,10 +485,16 @@ async function getCollationSummary(req, res) {
     }
 
     let query = `
-      SELECT cr.*, 
-             GROUP_CONCAT(
-               JSON_OBJECT('candidate_id', cav.candidate_id, 'total_votes', cav.total_votes)
-             ) AS votes_json
+      SELECT cr.*,
+             COALESCE(
+               JSON_AGG(
+                 JSON_BUILD_OBJECT(
+                   'candidate_id', cav.candidate_id,
+                   'total_votes', cav.total_votes::INTEGER
+                 ) ORDER BY cav.total_votes DESC
+               ) FILTER (WHERE cav.candidate_id IS NOT NULL),
+               '[]'::JSON
+             ) AS candidate_votes
       FROM collation_records cr
       LEFT JOIN collation_aggregated_votes cav ON cav.collation_id = cr.id
       WHERE cr.election_id = ?
@@ -498,27 +506,28 @@ async function getCollationSummary(req, res) {
       params.push(level);
     }
 
-    query += ' GROUP BY cr.id ORDER BY FIELD(cr.level, "ward", "lga", "state"), cr.entity_name ASC';
+    query += ` GROUP BY cr.id
+      ORDER BY CASE cr.level WHEN 'ward' THEN 1 WHEN 'lga' THEN 2 WHEN 'state' THEN 3 ELSE 4 END,
+               cr.entity_name ASC`;
 
     const [records] = await pool.query(query, params);
 
-    // Parse the votes_json
-    const parsedRecords = records.map(r => {
-      let candidate_votes = [];
-      if (r.votes_json) {
-        try {
-          candidate_votes = r.votes_json.split(',{').map((s, i) => {
-            if (i > 0) s = '{' + s;
-            return JSON.parse(s);
-          });
-        } catch (e) {
-          candidate_votes = [];
-        }
-      }
-      delete r.votes_json;
-      r.candidate_votes = candidate_votes;
-      return r;
-    });
+    const parsedRecords = records.map((record) => ({
+      ...record,
+      total_polling_units: Number(record.total_polling_units || 0),
+      reported_polling_units: Number(record.reported_polling_units || 0),
+      total_registered_voters: Number(record.total_registered_voters || 0),
+      total_accredited_voters: Number(record.total_accredited_voters || 0),
+      total_votes_cast: Number(record.total_votes_cast || 0),
+      total_valid_votes: Number(record.total_valid_votes || 0),
+      total_rejected_votes: Number(record.total_rejected_votes || 0),
+      candidate_votes: Array.isArray(record.candidate_votes)
+        ? record.candidate_votes.map((vote) => ({
+            ...vote,
+            total_votes: Number(vote.total_votes || 0),
+          }))
+        : [],
+    }));
 
     // Get summary stats
     const [[stateSummary]] = await pool.query(`
@@ -531,7 +540,7 @@ async function getCollationSummary(req, res) {
     `, [election_id, election_id, election_id]);
 
     const response = {
-      summary: stateSummary,
+      summary: Object.fromEntries(Object.entries(stateSummary || {}).map(([key, value]) => [key, Number(value || 0)])),
       records: parsedRecords
     };
 

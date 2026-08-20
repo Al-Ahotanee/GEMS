@@ -81,7 +81,7 @@ async function submitResult(req, res) {
 
     // Verify election exists and is ongoing
     const [elections] = await pool.query(
-      'SELECT id FROM elections WHERE id = ? AND status = ?',
+      'SELECT id, election_year FROM elections WHERE id = ? AND status = ?',
       [election_id, 'ongoing']
     );
     if (elections.length === 0) {
@@ -234,11 +234,10 @@ async function submitResult(req, res) {
       }
     }
 
-    // Invalidate caches
-    cache.del('public:situation_room');
-    cache.del('dashboard:state');
-    cache.del(`dashboard:lga:${pu.lga_id}`);
-    cache.del(`dashboard:ward:${pu.ward_id}`);
+    // Invalidate the keys used by the live dashboards.
+    cache.del('situation_room');
+    cache.del('state_dash_latest');
+    cache.del(`state_dash_${election_id}`);
 
     // Broadcast via Socket.io
     const io = req.app.get('io');
@@ -249,7 +248,7 @@ async function submitResult(req, res) {
         polling_unit_id,
         ward_id: pu.ward_id,
         lga_id: pu.lga_id,
-        status: 'submitted'
+        status: 'pending'
       });
     }
 
@@ -436,6 +435,14 @@ async function getResult(req, res) {
   }
 }
 
+function invalidateResultCaches(cacheStore, electionId, lgaId, wardId) {
+  cacheStore.del('situation_room');
+  cacheStore.del('state_dash_latest');
+  cacheStore.del(`state_dash_${electionId}`);
+  if (lgaId !== undefined && lgaId !== null) cacheStore.del(`lga_dash_${lgaId}_${electionId}`);
+  if (wardId !== undefined && wardId !== null) cacheStore.del(`ward_dash_${wardId}_${electionId}`);
+}
+
 async function verifyResult(req, res) {
   try {
     const { id } = req.params;
@@ -489,11 +496,8 @@ async function verifyResult(req, res) {
       [uuidv4(), userId, id, JSON.stringify({ submission_uid: submission.submission_uid }), req.ip]
     );
 
-    // Invalidate caches
-    cache.del('public:situation_room');
-    cache.del('dashboard:state');
-    cache.del(`dashboard:lga:${submission.lga_id}`);
-    cache.del(`dashboard:ward:${submission.ward_id}`);
+    // Invalidate public, state, LGA, and ward dashboard caches.
+    invalidateResultCaches(cache, submission.election_id, submission.lga_id, submission.ward_id);
 
     // Broadcast verified event
     const io = req.app.get('io');
@@ -584,9 +588,8 @@ async function rejectResult(req, res) {
       [uuidv4(), userId, id, JSON.stringify({ submission_uid: submission.submission_uid, reason }), req.ip]
     );
 
-    // Invalidate caches
-    cache.del('public:situation_room');
-    cache.del('dashboard:state');
+    // Invalidate public, state, LGA, and ward dashboard caches.
+    invalidateResultCaches(cache, submission.election_id, submission.lga_id, submission.ward_id);
 
     // Notify submitter
     await notificationService.notify(
@@ -641,6 +644,9 @@ async function flagResult(req, res) {
        VALUES (?, ?, 'flag_result', 'result_submission', ?, ?, ?, NOW())`,
       [uuidv4(), userId, id, JSON.stringify({ reason, flag_type: flag_type || 'suspicious' }), req.ip]
     );
+
+    // Invalidate public, state, LGA, and ward dashboard caches.
+    invalidateResultCaches(cache, submission.election_id, submission.lga_id, submission.ward_id);
 
     // Notify admin users
     const [admins] = await pool.query(
