@@ -48,7 +48,7 @@ The API health endpoint is `GET /health`. It returns `200` only when the applica
 5. The Blueprint intentionally does not use `preDeployCommand`, because Render Free does not support pre-deploy commands for Free services. Instead, its start command is `npm run migrate && npm start`. The idempotent PostgreSQL migration runs before every service start, including the first deployment and later restarts.
 6. Run `npm run seed` once from your local computer against the Neon `DATABASE_URL` only when initial reference data is required. Do not add seeding to the Render start command.
 
-The Blueprint uses `npm ci && npm run build` as its build command, `npm run migrate && npm start` as its start command, and `/health` as its health check. Render supplies the runtime `PORT`; the server listens on `0.0.0.0` by default.
+The Blueprint uses `npm ci --include=dev && npm run build` as its build command, `npm run migrate && npm start` as its start command, and `/health` as its health check. The explicit `--include=dev` is required because Vite, TypeScript, the React plugin, and the PWA plugin are frontend build-time dependencies. Render supplies the runtime `PORT`; the server listens on `0.0.0.0` by default.
 
 ## Optional integrations
 
