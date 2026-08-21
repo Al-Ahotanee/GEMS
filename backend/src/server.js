@@ -9,12 +9,15 @@ const logger = require('./utils/logger');
 
 const port = Number(process.env.PORT || 10000);
 const host = process.env.HOST || '0.0.0.0';
-const allowedOrigins = (process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? '' : '*'))
+const originConfiguration = process.env.FRONTEND_URL
+  || process.env.RENDER_EXTERNAL_URL
+  || (process.env.NODE_ENV === 'production' ? '' : '*');
+const allowedOrigins = originConfiguration
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
 if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
-  throw new Error('FRONTEND_URL is required in production');
+  throw new Error('FRONTEND_URL or RENDER_EXTERNAL_URL is required in production');
 }
 
 const server = http.createServer(app);

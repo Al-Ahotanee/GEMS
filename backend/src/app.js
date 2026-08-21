@@ -15,17 +15,19 @@ const app = express();
 const frontendDist = path.resolve(__dirname, '../../frontend/dist');
 const uploadRoot = path.resolve(__dirname, '..', 'uploads');
 
+function configuredOrigins() {
+  return (process.env.FRONTEND_URL || process.env.RENDER_EXTERNAL_URL || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
-const allowedOrigins = new Set(
-  (process.env.FRONTEND_URL || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-);
+const allowedOrigins = new Set(configuredOrigins());
 if (process.env.NODE_ENV === 'production' && allowedOrigins.size === 0) {
-  throw new Error('FRONTEND_URL is required in production');
+  throw new Error('FRONTEND_URL or RENDER_EXTERNAL_URL is required in production');
 }
 
 app.use(helmet({
