@@ -238,23 +238,46 @@ export interface CandidateResult {
 export interface LGADashboardSummary {
   lga_id: number;
   lga_name: string;
+  lga_code?: string;
   total_wards?: number;
   total_polling_units: number;
   reported_polling_units: number;
   verified_polling_units?: number;
   reporting_percentage: number;
   total_votes?: number;
+  total_registered_voters?: number;
+  total_accredited_voters?: number;
+  total_votes_cast?: number;
+  total_valid_votes?: number;
+  rejected_votes?: number;
+  turnout_percentage?: number;
+  accreditation_percentage?: number;
+  leading_party?: string;
+  leading_candidate?: string;
+  lead_margin?: number;
+  latitude?: number;
+  longitude?: number;
   candidates?: CandidateResult[];
 }
 
 export interface WardDashboardSummary {
   ward_id: number;
   ward_name: string;
+  ward_code?: string;
   total_polling_units: number;
   reported_polling_units: number;
   verified_polling_units?: number;
   reporting_percentage: number;
   total_votes?: number;
+  total_registered_voters?: number;
+  total_accredited_voters?: number;
+  total_votes_cast?: number;
+  total_valid_votes?: number;
+  rejected_votes?: number;
+  turnout_percentage?: number;
+  accreditation_percentage?: number;
+  leading_party?: string;
+  leading_candidate?: string;
   candidates?: CandidateResult[];
 }
 
@@ -432,10 +455,43 @@ export interface SituationRoomData {
   reported_polling_units: number;
   verified_polling_units: number;
   total_registered_voters: number;
+  total_accredited_voters?: number;
   total_votes_cast: number;
+  total_valid_votes?: number;
+  rejected_votes?: number;
+  accreditation_percentage?: number;
   turnout_percentage: number;
+  valid_vote_percentage?: number;
+  rejected_vote_percentage?: number;
   reporting_percentage: number;
+  leading_party?: string;
+  leading_candidate?: string;
+  lead_margin?: number;
   lga_breakdown: LGADashboardSummary[];
+  last_updated: string;
+}
+
+export interface SituationRoomLGAData {
+  lga: LGA;
+  election: Election;
+  candidates: CandidateResult[];
+  wards: WardDashboardSummary[];
+  total_polling_units: number;
+  reported_polling_units: number;
+  verified_polling_units: number;
+  total_registered_voters: number;
+  total_accredited_voters: number;
+  total_votes_cast: number;
+  total_valid_votes: number;
+  rejected_votes: number;
+  accreditation_percentage: number;
+  turnout_percentage: number;
+  valid_vote_percentage: number;
+  rejected_vote_percentage: number;
+  reporting_percentage: number;
+  leading_party: string;
+  leading_candidate: string;
+  lead_margin: number;
   last_updated: string;
 }
 
