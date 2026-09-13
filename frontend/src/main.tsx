@@ -12,7 +12,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Don't retry on 4xx errors — avoids spamming the API when not authenticated
-      retry: (failureCount, error: unknown) => {
+      retry: (failureCount: number, error: unknown) => {
         const err = error as { response?: { status?: number } };
         const status = err?.response?.status;
         if (status === 401 || status === 403 || status === 404) return false;
@@ -27,6 +27,12 @@ const queryClient = new QueryClient({
       retry: 0,
     },
   },
+});
+
+// Auto-reload on deployment chunk update errors
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  window.location.reload();
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -32,7 +32,19 @@ if (process.env.NODE_ENV === 'production' && allowedOrigins.size === 0) {
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+      imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
+      connectSrc: ["'self'", "https:", "wss:", "ws:"],
+      workerSrc: ["'self'", "blob:"],
+      manifestSrc: ["'self'"],
+    },
+  },
 }));
 app.use(compression());
 app.use(cors({
@@ -85,9 +97,24 @@ app.get('/health', async (req, res) => {
 app.get('/api/v1/health', (req, res) => res.redirect(307, '/health'));
 
 if (fs.existsSync(frontendDist)) {
-  app.use(express.static(frontendDist, { index: 'index.html', maxAge: '1h' }));
+  app.use(express.static(frontendDist, {
+    index: false,
+    maxAge: '1d',
+    setHeaders: (res, filePath) => {
+      if (filePath.includes(`${path.sep}assets${path.sep}`) || filePath.includes('/assets/')) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    },
+  }));
+
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api/') || req.path === '/health' || req.path.startsWith('/uploads/')) return next();
+    if (req.path.startsWith('/assets/') || /\.[a-zA-Z0-9]+$/.test(req.path)) {
+      return res.status(404).json({ success: false, message: 'Asset not found' });
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.sendFile(path.join(frontendDist, 'index.html'));
   });
 }

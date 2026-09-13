@@ -20,7 +20,7 @@ export default function AdminApplicationsPage() {
 
   const reviewMut = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) => adminApi.reviewApplication(id, { status, review_notes: reviewNotes }),
-    onSuccess: (res) => { queryClient.invalidateQueries({ queryKey: ['applications'] }); setSelectedApp(null); setReviewNotes(''); toast.success(`Application ${res?.data?.data?.tempPassword ? `approved. Temp password: ${res.data.data.tempPassword}` : 'processed'}`); },
+    onSuccess: (res: any) => { queryClient.invalidateQueries({ queryKey: ['applications'] }); setSelectedApp(null); setReviewNotes(''); toast.success(`Application ${res?.data?.data?.tempPassword ? `approved. Temp password: ${res.data.data.tempPassword}` : 'processed'}`); },
     onError: (e: unknown) => {
       const err = e as { response?: { data?: { message?: string } } };
       toast.error(err.response?.data?.message || 'Failed');
