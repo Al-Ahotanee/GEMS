@@ -91,6 +91,7 @@ router.get('/dashboard/timeline', authenticate, dashboardController.getTimeline)
 // ============ PUBLIC ROUTES (NO AUTH) ============
 router.get('/public/situation-room', publicController.getSituationRoom);
 router.get('/public/situation-room/lga/:id', publicController.getSituationRoomLGA);
+router.get('/public/situation-room/ward/:id', publicController.getSituationRoomWard);
 router.get('/public/embed/:electionId', publicController.getEmbedData);
 
 // ============ DISPUTE ROUTES ============

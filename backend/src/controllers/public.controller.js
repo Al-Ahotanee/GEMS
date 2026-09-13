@@ -131,9 +131,16 @@ const getSituationRoom = async (req, res) => {
     const runnerUp = candidateResults[1];
     const leadMargin = leader && runnerUp ? Number(leader.total_votes || 0) - Number(runnerUp.total_votes || 0) : Number(leader?.total_votes || 0);
 
+    const totalLGAs = lgaBreakdown.length;
+    const reportedLGAs = lgaBreakdown.filter(l => l.reported_polling_units > 0).length;
+    const verifiedLGAs = lgaBreakdown.filter(l => l.verified_polling_units > 0).length;
+
     const data = {
       election,
       candidates: candidateResults,
+      total_lgas: totalLGAs,
+      reported_lgas: reportedLGAs,
+      verified_lgas: verifiedLGAs,
       total_polling_units: Number(puStats[0].total || 0),
       reported_polling_units: Number(reportedStats[0].total || 0),
       verified_polling_units: Number(verifiedStats[0].total || 0),
@@ -302,11 +309,18 @@ const getSituationRoomLGA = async (req, res) => {
     const runnerUp = candidateResults[1];
     const margin = leader && runnerUp ? Number(leader.total_votes || 0) - Number(runnerUp.total_votes || 0) : Number(leader?.total_votes || 0);
 
+    const totalWards = enrichedWards.length;
+    const reportedWards = enrichedWards.filter(w => w.reported_polling_units > 0).length;
+    const verifiedWards = enrichedWards.filter(w => w.verified_polling_units > 0).length;
+
     return ApiResponse.success(res, {
       lga,
       election,
       candidates: candidateResults,
       wards: enrichedWards,
+      total_wards: totalWards,
+      reported_wards: reportedWards,
+      verified_wards: verifiedWards,
       total_polling_units: totalPUs,
       reported_polling_units: reportedPUs,
       verified_polling_units: verifiedPUs,
@@ -328,6 +342,170 @@ const getSituationRoomLGA = async (req, res) => {
   } catch (error) {
     logger.error('Situation room LGA error:', error);
     return ApiResponse.error(res, 'Failed to load LGA data');
+  }
+};
+
+// Public Situation Room Ward & Polling Units breakdown
+const getSituationRoomWard = async (req, res) => {
+  try {
+    const wardId = parseInt(req.params.id);
+    const [wards] = await pool.query(
+      `SELECT w.id, w.name, w.code, w.lga_id, l.name as lga_name, l.code as lga_code
+       FROM wards w
+       JOIN lgas l ON l.id = w.lga_id
+       WHERE w.id = ?`,
+      [wardId]
+    );
+    if (!wards.length) return ApiResponse.notFound(res, 'Ward not found');
+    const ward = wards[0];
+
+    let [elections] = await pool.query("SELECT id, title, election_date, status FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1");
+    if (!elections.length) {
+      const [latest] = await pool.query('SELECT id, title, election_date, status FROM elections ORDER BY election_date DESC LIMIT 1');
+      elections = latest;
+    }
+    if (!elections.length) return ApiResponse.notFound(res, 'No election found');
+    const election = elections[0];
+
+    // Ward Registered Voters
+    const [wardReg] = await pool.query(
+      'SELECT COALESCE(SUM(registered_voters), 0) AS total_registered_voters FROM polling_units WHERE ward_id = ?',
+      [wardId]
+    );
+
+    // Ward Aggregated Verified Votes
+    const [wardVerifiedAgg] = await pool.query(
+      `SELECT
+         COALESCE(SUM(accredited_voters), 0) AS total_accredited_voters,
+         COALESCE(SUM(total_votes_cast), 0) AS total_votes_cast,
+         COALESCE(SUM(total_valid_votes), 0) AS total_valid_votes,
+         COALESCE(SUM(rejected_votes), 0) AS total_rejected_votes
+       FROM result_submissions
+       WHERE election_id = ? AND ward_id = ? AND status = 'verified'`,
+      [election.id, wardId]
+    );
+
+    const [puCounts] = await pool.query(
+      `SELECT
+         (SELECT COUNT(*) FROM polling_units WHERE ward_id = ?) AS total_polling_units,
+         (SELECT COUNT(*) FROM result_submissions WHERE ward_id = ? AND election_id = ? AND status <> 'rejected') AS reported_polling_units,
+         (SELECT COUNT(*) FROM result_submissions WHERE ward_id = ? AND election_id = ? AND status = 'verified') AS verified_polling_units`,
+      [wardId, wardId, election.id, wardId, election.id]
+    );
+
+    const totalReg = Number(wardReg[0]?.total_registered_voters || 0);
+    const totalAccred = Number(wardVerifiedAgg[0]?.total_accredited_voters || 0);
+    const totalCast = Number(wardVerifiedAgg[0]?.total_votes_cast || 0);
+    const totalValid = Number(wardVerifiedAgg[0]?.total_valid_votes || 0);
+    const totalRejected = Number(wardVerifiedAgg[0]?.total_rejected_votes || 0);
+    const totalPUs = Number(puCounts[0]?.total_polling_units || 0);
+    const reportedPUs = Number(puCounts[0]?.reported_polling_units || 0);
+    const verifiedPUs = Number(puCounts[0]?.verified_polling_units || 0);
+
+    // Ward Candidate Totals
+    const [candidates] = await pool.query(
+      `SELECT c.id as candidate_id, c.full_name, c.party_code, c.party_name, c.photo_url,
+              COALESCE(SUM(CASE WHEN rs.id IS NOT NULL THEN vd.votes ELSE 0 END), 0) as total_votes
+       FROM candidates c
+       LEFT JOIN vote_data vd ON vd.candidate_id = c.id
+       LEFT JOIN result_submissions rs ON rs.id = vd.submission_id AND rs.ward_id = ? AND rs.status = 'verified' AND rs.election_id = ?
+       WHERE c.election_id = ? GROUP BY c.id ORDER BY total_votes DESC`,
+      [wardId, election.id, election.id]
+    );
+
+    const validDenom = totalValid > 0 ? totalValid : totalCast;
+    const candidateResults = candidates.map(c => ({
+      ...c,
+      total_votes: Number(c.total_votes || 0),
+      vote_percentage: validDenom > 0 ? Number(((Number(c.total_votes || 0) / validDenom) * 100).toFixed(2)) : 0
+    }));
+
+    // Polling Units in this Ward with submission details and candidate votes
+    const [puRows] = await pool.query(
+      `SELECT pu.id, pu.name, pu.inec_pu_code, pu.registered_voters, pu.latitude, pu.longitude,
+              rs.id as submission_id, rs.submission_uid, rs.status as submission_status,
+              rs.accredited_voters, rs.total_votes_cast, rs.total_valid_votes, rs.rejected_votes,
+              rs.created_at as submitted_at, rs.verified_at
+       FROM polling_units pu
+       LEFT JOIN result_submissions rs ON rs.polling_unit_id = pu.id AND rs.election_id = ? AND rs.status <> 'rejected'
+       WHERE pu.ward_id = ? ORDER BY pu.inec_pu_code`,
+      [election.id, wardId]
+    );
+
+    const enrichedPUs = [];
+    for (const pu of puRows) {
+      let puVotes = [];
+      if (pu.submission_id) {
+        const [vData] = await pool.query(
+          `SELECT vd.candidate_id, vd.votes, c.party_code, c.full_name
+           FROM vote_data vd
+           JOIN candidates c ON c.id = vd.candidate_id
+           WHERE vd.submission_id = ? ORDER BY vd.votes DESC`,
+          [pu.submission_id]
+        );
+        puVotes = vData.map(v => ({
+          candidate_id: v.candidate_id,
+          party_code: v.party_code,
+          full_name: v.full_name,
+          votes: Number(v.votes || 0)
+        }));
+      }
+
+      const puLeader = puVotes[0];
+      const puReg = Number(pu.registered_voters || 0);
+      const puCast = Number(pu.total_votes_cast || 0);
+
+      enrichedPUs.push({
+        id: pu.id,
+        name: pu.name,
+        inec_pu_code: pu.inec_pu_code,
+        registered_voters: puReg,
+        submission_id: pu.submission_id || null,
+        submission_uid: pu.submission_uid || null,
+        status: pu.submission_status || 'not_reported',
+        accredited_voters: pu.accredited_voters !== null ? Number(pu.accredited_voters) : null,
+        total_votes_cast: pu.total_votes_cast !== null ? Number(pu.total_votes_cast) : null,
+        total_valid_votes: pu.total_valid_votes !== null ? Number(pu.total_valid_votes) : null,
+        rejected_votes: pu.rejected_votes !== null ? Number(pu.rejected_votes) : null,
+        turnout_percentage: puReg > 0 && puCast > 0 ? Number(((puCast / puReg) * 100).toFixed(2)) : 0,
+        submitted_at: pu.submitted_at || null,
+        verified_at: pu.verified_at || null,
+        leading_party: puLeader && puLeader.votes > 0 ? puLeader.party_code : 'N/A',
+        leading_candidate: puLeader && puLeader.votes > 0 ? puLeader.full_name : 'N/A',
+        votes: puVotes
+      });
+    }
+
+    const leader = candidateResults[0];
+    const runnerUp = candidateResults[1];
+    const margin = leader && runnerUp ? Number(leader.total_votes || 0) - Number(runnerUp.total_votes || 0) : Number(leader?.total_votes || 0);
+
+    return ApiResponse.success(res, {
+      ward,
+      election,
+      candidates: candidateResults,
+      polling_units: enrichedPUs,
+      total_polling_units: totalPUs,
+      reported_polling_units: reportedPUs,
+      verified_polling_units: verifiedPUs,
+      total_registered_voters: totalReg,
+      total_accredited_voters: totalAccred,
+      total_votes_cast: totalCast,
+      total_valid_votes: totalValid,
+      rejected_votes: totalRejected,
+      accreditation_percentage: totalReg > 0 ? Number(((totalAccred / totalReg) * 100).toFixed(2)) : 0,
+      turnout_percentage: totalReg > 0 ? Number(((totalCast / totalReg) * 100).toFixed(2)) : 0,
+      valid_vote_percentage: totalCast > 0 ? Number(((totalValid / totalCast) * 100).toFixed(2)) : 0,
+      rejected_vote_percentage: totalCast > 0 ? Number(((totalRejected / totalCast) * 100).toFixed(2)) : 0,
+      reporting_percentage: totalPUs > 0 ? Number(((reportedPUs / totalPUs) * 100).toFixed(1)) : 0,
+      lead_margin: margin,
+      leading_party: leader && leader.total_votes > 0 ? leader.party_code : 'N/A',
+      leading_candidate: leader && leader.total_votes > 0 ? leader.full_name : 'N/A',
+      last_updated: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Situation room Ward error:', error);
+    return ApiResponse.error(res, 'Failed to load Ward data');
   }
 };
 
@@ -364,4 +542,4 @@ const getEmbedData = async (req, res) => {
   }
 };
 
-module.exports = { getSituationRoom, getSituationRoomLGA, getEmbedData };
+module.exports = { getSituationRoom, getSituationRoomLGA, getSituationRoomWard, getEmbedData };

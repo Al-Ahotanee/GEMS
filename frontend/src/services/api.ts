@@ -195,6 +195,7 @@ export const dashboardApi = {
 export const publicApi = {
   getSituationRoom() { return api.get('/public/situation-room'); },
   getSituationRoomLGA(lgaId: number) { return api.get(`/public/situation-room/lga/${lgaId}`); },
+  getSituationRoomWard(wardId: number) { return api.get(`/public/situation-room/ward/${wardId}`); },
   getEmbedData(electionId: number) { return api.get(`/public/embed/${electionId}`); },
 };
 
