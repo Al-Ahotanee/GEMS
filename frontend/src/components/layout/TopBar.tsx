@@ -1,4 +1,4 @@
-/* Quiet Atlas: a cartographic command strip with explicit route context and restrained live signals. */
+/* Quiet Atlas: a calm cartographic command bar with compact operational context. */
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -99,7 +99,7 @@ function TopBar() {
   };
 
   return (
-    <header className="atlas-topbar sticky top-0 z-30 backdrop-blur-xl border-b border-dark-border no-print relative">
+    <header className="sticky top-0 z-30 bg-dark-surface/90 backdrop-blur-xl border-b border-dark-border no-print">
       <div className="flex items-center justify-between h-[4.5rem] px-4 lg:px-8">
         {/* Left section */}
         <div className="flex items-center gap-4">
@@ -113,7 +113,7 @@ function TopBar() {
           </button>
 
           {/* Page title */}
-          <div className="hidden sm:block"><p className="eyebrow !text-[.56rem] !tracking-[.15em]">GSEM / Operations</p><h2 className="font-display text-xl font-semibold text-text-primary leading-none mt-1">{pageTitle}</h2></div>
+          <div className="hidden sm:block"><p className="eyebrow !text-[.56rem] !tracking-[.15em]">Operations</p><h2 className="font-display text-xl font-semibold text-text-primary leading-none mt-1">{pageTitle}</h2></div>
         </div>
 
         {/* Right section */}
@@ -124,8 +124,8 @@ function TopBar() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
                 type="text"
-                placeholder="Find a record or location"
-                className="w-48 lg:w-64 bg-dark-surface-2/70 border border-dark-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200"
+                placeholder="Search..."
+                className="w-48 lg:w-64 bg-dark-surface-2/70 border border-dark-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200"
               />
             </div>
           </div>
@@ -262,7 +262,7 @@ function TopBar() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                 <input
                   type="text"
-                placeholder="Find a record or location"
+                  placeholder="Search..."
                   autoFocus
                   className="w-full bg-dark-surface-2 border border-dark-border rounded-lg pl-9 pr-4 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/50 transition-all duration-200"
                 />

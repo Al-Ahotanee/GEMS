@@ -1,4 +1,4 @@
-/* Quiet Atlas: bounded field records with cobalt/moss signal lines and factual mono numerals. */
+/* Quiet Atlas: tactile white metric slips, cobalt/moss signal icons, and factual mono numerals. */
 import { motion } from 'framer-motion';
 import CountUp from 'react-countup';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -69,11 +69,10 @@ function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'primary'
       animate="animate"
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       className={clsx(
-        'stat-card atlas-stat-card cursor-default',
+        'stat-card cursor-default',
         'hover:shadow-lg hover:border-primary-300/70',
         styles.glow
       )}
-      data-tone={color}
     >
       <div className="flex items-start justify-between">
         {/* Text content */}
