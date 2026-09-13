@@ -191,6 +191,15 @@ const generateExcel = async (req, res) => {
   }
 };
 
+function escapeCsvCell(val) {
+  if (val === null || val === undefined) return '""';
+  let str = String(val);
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
 const generateCSV = async (req, res) => {
   try {
     const { election_id } = req.query;
@@ -216,7 +225,22 @@ const generateCSV = async (req, res) => {
 
     const headers = 'Submission UID,Polling Unit,PU Code,Ward,LGA,Status,Accredited,Valid Votes,Rejected,Total Cast,Latitude,Longitude,Submitted At,Submitted By\n';
     const rows = results.map(r =>
-      `"${r.submission_uid}","${r.pu_name}","${r.inec_pu_code}","${r.ward_name}","${r.lga_name}","${r.status}",${r.accredited_voters},${r.total_valid_votes},${r.rejected_votes},${r.total_votes_cast},${r.latitude || ''},${r.longitude || ''},"${r.created_at}","${r.submitted_by}"`
+      [
+        escapeCsvCell(r.submission_uid),
+        escapeCsvCell(r.pu_name),
+        escapeCsvCell(r.inec_pu_code),
+        escapeCsvCell(r.ward_name),
+        escapeCsvCell(r.lga_name),
+        escapeCsvCell(r.status),
+        Number(r.accredited_voters || 0),
+        Number(r.total_valid_votes || 0),
+        Number(r.rejected_votes || 0),
+        Number(r.total_votes_cast || 0),
+        r.latitude || '',
+        r.longitude || '',
+        escapeCsvCell(r.created_at ? new Date(r.created_at).toISOString() : ''),
+        escapeCsvCell(r.submitted_by)
+      ].join(',')
     ).join('\n');
 
     res.setHeader('Content-Type', 'text/csv');

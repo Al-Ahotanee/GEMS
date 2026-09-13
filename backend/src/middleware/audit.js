@@ -2,6 +2,20 @@ const { pool } = require('../config/database');
 const logger = require('../utils/logger');
 const { v4: uuidv4 } = require('uuid');
 
+function sanitizeAuditPayload(data) {
+  if (!data || typeof data !== 'object') return data;
+  const sensitiveKeys = new Set(['password', 'new_password', 'current_password', 'pin', 'token', 'refreshToken']);
+  const sanitized = Array.isArray(data) ? [...data] : { ...data };
+  for (const key of Object.keys(sanitized)) {
+    if (sensitiveKeys.has(key)) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      sanitized[key] = sanitizeAuditPayload(sanitized[key]);
+    }
+  }
+  return sanitized;
+}
+
 const auditLog = (action, resourceType) => {
   return async (req, res, next) => {
     // Store original json method to capture response
@@ -16,8 +30,8 @@ const auditLog = (action, resourceType) => {
           action: action,
           resource_type: resourceType,
           resource_id: req.params.id || (data && data.data && data.data.id) || null,
-          old_value: req._auditOldValue ? JSON.stringify(req._auditOldValue) : null,
-          new_value: req.body ? JSON.stringify(req.body) : null,
+          old_value: req._auditOldValue ? JSON.stringify(sanitizeAuditPayload(req._auditOldValue)) : null,
+          new_value: req.body ? JSON.stringify(sanitizeAuditPayload(req.body)) : null,
           ip_address: req.ip || req.connection.remoteAddress,
           user_agent: req.get('User-Agent') || 'unknown'
         };
@@ -44,8 +58,8 @@ const createAuditEntry = async (userId, action, resourceType, resourceId, oldVal
       `INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, old_value, new_value, ip_address, user_agent)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [uuidv4(), userId, action, resourceType, resourceId, 
-       oldValue ? JSON.stringify(oldValue) : null,
-       newValue ? JSON.stringify(newValue) : null,
+       oldValue ? JSON.stringify(sanitizeAuditPayload(oldValue)) : null,
+       newValue ? JSON.stringify(sanitizeAuditPayload(newValue)) : null,
        ipAddress, userAgent]
     );
   } catch (error) {

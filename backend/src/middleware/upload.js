@@ -12,6 +12,15 @@ uploadDirs.forEach(dir => {
   }
 });
 
+const MIME_EXT_MAP = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'application/pdf': '.pdf',
+};
+
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.pdf']);
+
 // Storage config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -24,7 +33,8 @@ const storage = multer.diskStorage({
     cb(null, fullPath);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
+    const rawExt = path.extname(file.originalname || '').toLowerCase();
+    const ext = ALLOWED_EXTENSIONS.has(rawExt) ? (rawExt === '.jpeg' ? '.jpg' : rawExt) : (MIME_EXT_MAP[file.mimetype] || '.bin');
     const filename = `${uuidv4()}${ext}`;
     cb(null, filename);
   }
@@ -34,15 +44,16 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const allowedImages = ['image/jpeg', 'image/png', 'image/webp'];
   const allowedDocs = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+  const ext = path.extname(file.originalname || '').toLowerCase();
   
   if (req._uploadType === 'result' || req._uploadType === 'profile') {
-    if (allowedImages.includes(file.mimetype)) {
+    if (allowedImages.includes(file.mimetype) && ['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
       cb(null, true);
     } else {
       cb(new Error('Only JPEG, PNG, and WebP images are allowed'), false);
     }
   } else {
-    if (allowedDocs.includes(file.mimetype)) {
+    if (allowedDocs.includes(file.mimetype) && ['.pdf', '.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
       cb(null, true);
     } else {
       cb(new Error('Only PDF and image files are allowed'), false);

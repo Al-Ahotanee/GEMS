@@ -1,4 +1,4 @@
-/* Quiet Atlas: cobalt field guide navigation, cloud surfaces, and jurisdiction-first hierarchy. */
+/* Quiet Atlas: cobalt geographic index, sand active marker, and jurisdiction-first navigation. */
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -127,7 +127,7 @@ function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 bg-dark-surface/95 backdrop-blur-xl border-r border-dark-border z-40 no-print">
+      <aside className="atlas-sidebar hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 border-r border-white/10 z-40 no-print">
         <SidebarContent
           filteredItems={filteredItems}
           userRole={userRole}
@@ -151,7 +151,7 @@ function Sidebar() {
               onClick={() => dispatch(toggleSidebar())}
             />
             <motion.aside
-              className="fixed inset-y-0 left-0 w-72 bg-dark-surface border-r border-dark-border z-50 lg:hidden flex flex-col"
+              className="atlas-sidebar fixed inset-y-0 left-0 w-72 border-r border-white/10 z-50 lg:hidden flex flex-col"
               variants={sidebarVariants}
               initial="closed"
               animate="open"
@@ -160,7 +160,7 @@ function Sidebar() {
               <div className="flex items-center justify-end p-3">
                 <button
                   onClick={() => dispatch(toggleSidebar())}
-                  className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-dark-surface-2 transition-colors"
+                  className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
                   aria-label="Close sidebar"
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -200,19 +200,19 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
   return (
     <div className="flex flex-col h-full">
       {/* Logo / Branding */}
-      <div className="px-6 pt-7 pb-5 border-b border-dark-border">
+      <div className="px-6 pt-7 pb-5 atlas-sidebar-rule border-b">
         <NavLink to="/app/dashboard" className="block" onClick={onLinkClick}>
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-600 text-white shadow-sm shadow-primary-900/20"><Vote className="h-5 w-5" /></span>
-            <span><span className="block font-display text-2xl font-semibold tracking-tight text-primary-800">GSEM</span><span className="block text-[.59rem] font-extrabold uppercase tracking-[.16em] text-text-muted">Election Monitor</span></span>
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#f5f6f3] text-primary-800 shadow-sm shadow-primary-950/30"><Vote className="h-5 w-5" /></span>
+            <span><span className="block font-display text-2xl font-semibold tracking-tight text-white">GSEM</span><span className="block text-[.59rem] font-extrabold uppercase tracking-[.16em] text-white/55">Election Monitor</span></span>
           </div>
         </NavLink>
       </div>
 
       {/* User info */}
-      <div className="px-6 py-5 border-b border-dark-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-700 text-sm font-extrabold">
+      <div className="px-5 py-5 atlas-sidebar-rule border-b">
+        <div className="atlas-profile flex items-center gap-3 p-3">
+          <div className="atlas-user-monogram w-10 h-10 rounded-xl border flex items-center justify-center text-sm font-extrabold">
             {userName
               .split(' ')
               .map((n) => n[0])
@@ -221,8 +221,8 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
               .toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-text-primary truncate">{userName}</p>
-            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md text-[.58rem] font-extrabold bg-accent-50 text-accent-700 uppercase tracking-[.1em]">
+            <p className="atlas-profile-name text-sm font-bold truncate">{userName}</p>
+            <span className="atlas-profile-role inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md text-[.58rem] font-extrabold uppercase tracking-[.1em]">
               {roleLabelMap[userRole] ?? userRole}
             </span>
           </div>
@@ -246,7 +246,7 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
           return (
             <div key={item.label}>
               {showSection && (
-                <p className="px-3 pt-6 pb-2 text-[.61rem] font-extrabold text-text-muted uppercase tracking-[.18em]">
+                <p className="atlas-section-label px-3 pt-6 pb-2 text-[.61rem] font-extrabold uppercase tracking-[.18em]">
                   {item.section}
                 </p>
               )}
@@ -273,7 +273,7 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
       </nav>
 
       {/* Bottom section */}
-      <div className="px-4 py-4 border-t border-dark-border space-y-2">
+      <div className="px-4 py-4 atlas-sidebar-rule border-t space-y-2">
         {/* Online / Offline indicator */}
         <div className="flex items-center gap-2 px-3 py-2">
           {isOnline ? (
@@ -281,7 +281,7 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
           ) : (
             <WifiOff className="w-4 h-4 text-status-error" />
           )}
-          <span className={`text-xs font-medium ${isOnline ? 'text-status-success' : 'text-status-error'}`}>
+          <span className={`text-xs font-medium ${isOnline ? 'atlas-status-online' : 'atlas-status-offline'}`}>
             {isOnline ? 'Online' : 'Offline'}
           </span>
         </div>
@@ -289,7 +289,7 @@ function SidebarContent({ filteredItems, userRole, userName, user, isOnline, onL
         {/* Logout button */}
         <button
           onClick={onLogout}
-          className="sidebar-link w-full text-status-error hover:text-red-700 hover:bg-red-50"
+          className="sidebar-link w-full !text-red-100 hover:!text-white hover:!bg-red-400/20"
         >
           <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
           <span className="text-sm">Logout</span>

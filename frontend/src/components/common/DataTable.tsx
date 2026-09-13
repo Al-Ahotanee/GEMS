@@ -1,4 +1,4 @@
-/* Quiet Atlas: evidence-led tables with a cloud surface and restrained geographic-blue hierarchy. */
+/* Quiet Atlas: evidence-led field registers with calibrated cobalt, moss, and sand route markers. */
 import { ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 
@@ -91,7 +91,7 @@ function DataTable<T extends Record<string, unknown>>({
   };
 
   return (
-    <div className="glass-card overflow-hidden border-dark-border">
+    <div className="glass-card atlas-register overflow-hidden border-dark-border">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px]">
           <thead>

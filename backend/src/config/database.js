@@ -92,7 +92,7 @@ function normalizeSql(input) {
   sql = sql.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, (_, value) => `'${value.replace(/'/g, "''")}'`);
   sql = sql.replace(/\bIFNULL\s*\(/gi, 'COALESCE(');
   sql = sql.replace(/DATE_FORMAT\(([^,]+),\s*'[^']*%Y[^']*%m[^']*%d[^']*%H:00'\)/gi, "to_char($1, 'YYYY-MM-DD HH24:00')");
-  sql = sql.replace(/\b(INSERT)\s+IGNORE\b/gi, 'INSERT');
+  // Preserve INSERT IGNORE marker for compatibility handling
   sql = sql.replace(/DATE_SUB\(NOW\(\),\s*INTERVAL\s+(\d+)\s+HOUR\)/gi, "(NOW() - INTERVAL '$1 hours')");
   sql = sql.replace(/DATE_SUB\(NOW\(\),\s*INTERVAL\s+(\d+)\s+DAY\)/gi, "(NOW() - INTERVAL '$1 days')");
   sql = sql.replace(/DATE_ADD\(NOW\(\),\s*INTERVAL\s+(\d+)\s+HOUR\)/gi, "(NOW() + INTERVAL '$1 hours')");
@@ -111,12 +111,16 @@ function isReadQuery(sql) {
 
 function addInsertCompatibility(sql) {
   let normalized = sql.trim().replace(/;\s*$/, '');
-  if (/^\s*INSERT\b/i.test(normalized) && !/\bON\s+CONFLICT\b/i.test(normalized)) {
-    const returningIndex = normalized.search(/\bRETURNING\b/i);
-    if (returningIndex >= 0) {
-      normalized = `${normalized.slice(0, returningIndex)}ON CONFLICT DO NOTHING ${normalized.slice(returningIndex)}`;
-    } else {
-      normalized += ' ON CONFLICT DO NOTHING';
+  const isInsertIgnore = /^\s*INSERT\s+IGNORE\b/i.test(normalized);
+  if (isInsertIgnore) {
+    normalized = normalized.replace(/^\s*INSERT\s+IGNORE\b/i, 'INSERT');
+    if (!/\bON\s+CONFLICT\b/i.test(normalized)) {
+      const returningIndex = normalized.search(/\bRETURNING\b/i);
+      if (returningIndex >= 0) {
+        normalized = `${normalized.slice(0, returningIndex)}ON CONFLICT DO NOTHING ${normalized.slice(returningIndex)}`;
+      } else {
+        normalized += ' ON CONFLICT DO NOTHING';
+      }
     }
   }
   if (/^\s*INSERT\b/i.test(normalized) && !/\bRETURNING\b/i.test(normalized)) {

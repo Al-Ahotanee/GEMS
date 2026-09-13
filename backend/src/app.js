@@ -60,7 +60,14 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', {
 }));
 
 fs.mkdirSync(uploadRoot, { recursive: true });
-app.use('/uploads', express.static(uploadRoot, { fallthrough: true, maxAge: '1h' }));
+app.use('/uploads', express.static(uploadRoot, {
+  fallthrough: true,
+  maxAge: '1h',
+  setHeaders: (res) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'");
+  }
+}));
 
 const routes = require('./routes');
 app.use('/api/v1', routes);

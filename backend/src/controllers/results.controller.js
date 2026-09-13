@@ -455,6 +455,13 @@ async function getResult(req, res) {
     result.votes = votes;
     result.images = images;
 
+    // Only privileged roles or the submitter can view submitter contact details
+    const canViewPii = ['super_admin', 'state_coordinator'].includes(req.user.role) || req.user.id === result.submitted_by;
+    if (!canViewPii) {
+      delete result.submitter_phone;
+      delete result.submitter_email;
+    }
+
     return ApiResponse.success(res, result);
 
   } catch (error) {

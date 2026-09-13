@@ -92,6 +92,13 @@ const updateUser = async (req, res) => {
 
     if (!updates.length) return ApiResponse.badRequest(res, 'No fields to update');
 
+    if (role || status || lga_id !== undefined || ward_id !== undefined || polling_unit_id !== undefined) {
+      updates.push('token_version = COALESCE(token_version, 0) + 1');
+      if (status && status !== 'active') {
+        await pool.query('UPDATE refresh_tokens SET revoked = TRUE, revoked_at = NOW() WHERE user_id = ? AND revoked = FALSE', [id]);
+      }
+    }
+
     params.push(id);
     await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
     return ApiResponse.success(res, null, 'User updated');

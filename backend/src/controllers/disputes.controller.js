@@ -49,11 +49,14 @@ const listDisputes = async (req, res) => {
 
     // Role scoping
     if (req.user.role === 'ward_officer' && req.user.ward_id) {
-      where += ' AND d.submission_id IN (SELECT id FROM result_submissions WHERE ward_id = ?)';
-      params.push(req.user.ward_id);
+      where += ' AND (d.submission_id IN (SELECT id FROM result_submissions WHERE ward_id = ?) OR (d.submission_id IS NULL AND d.raised_by = ?))';
+      params.push(req.user.ward_id, req.user.id);
     } else if (req.user.role === 'lga_coordinator' && req.user.lga_id) {
-      where += ' AND d.submission_id IN (SELECT id FROM result_submissions WHERE lga_id = ?)';
-      params.push(req.user.lga_id);
+      where += ' AND (d.submission_id IN (SELECT id FROM result_submissions WHERE lga_id = ?) OR (d.submission_id IS NULL AND d.raised_by = ?))';
+      params.push(req.user.lga_id, req.user.id);
+    } else if (req.user.role === 'pu_agent') {
+      where += ' AND d.raised_by = ?';
+      params.push(req.user.id);
     }
 
     const [countResult] = await pool.query(`SELECT COUNT(*) as total FROM disputes d ${where}`, params);
