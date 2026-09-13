@@ -141,10 +141,13 @@ async function login(req, res) {
       return ApiResponse.badRequest(res, 'Email or phone and password are required');
     }
 
-    // Find user by email or phone
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const normalizedPhone = (phone || '').trim();
+
+    // Find user by email (case-insensitive) or phone
     const [users] = await pool.query(
-      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, profile_photo_url, email_verified, password_hash, token_version FROM users WHERE (email = ? OR phone = ?) LIMIT 1',
-      [email || '', phone || '']
+      'SELECT id, email, phone, first_name, last_name, role, status, lga_id, ward_id, polling_unit_id, profile_photo_url, email_verified, password_hash, token_version FROM users WHERE (LOWER(email) = LOWER(?) OR (phone IS NOT NULL AND phone != \'\' AND phone = ?)) LIMIT 1',
+      [normalizedEmail, normalizedPhone]
     );
 
     if (users.length === 0) {
