@@ -268,6 +268,19 @@ const GOMBE_GEO_DATA = {
         { name: 'Zambuk', code: 'YAM/14', pollingUnits: generatePUs('YAM/14', 'Zambuk', 6, 10.14, 11.37) }
       ]
     }
+  ],
+  senatorialDistricts: [
+    { id: 'GN', name: 'Gombe North', lgas: ['Dukku', 'Funakaye', 'Gombe', 'Kwami', 'Nafada'] },
+    { id: 'GC', name: 'Gombe Central', lgas: ['Akko', 'Yamaltu/Deba'] },
+    { id: 'GS', name: 'Gombe South', lgas: ['Balanga', 'Billiri', 'Kaltungo', 'Shongom'] }
+  ],
+  federalConstituencies: [
+    { name: 'Akko', lgas: ['Akko'] },
+    { name: 'Balanga / Billiri', lgas: ['Balanga', 'Billiri'] },
+    { name: 'Dukku / Nafada', lgas: ['Dukku', 'Nafada'] },
+    { name: 'Gombe / Kwami / Funakaye', lgas: ['Gombe', 'Kwami', 'Funakaye'] },
+    { name: 'Kaltungo / Shongom', lgas: ['Kaltungo', 'Shongom'] },
+    { name: 'Yamaltu / Deba', lgas: ['Yamaltu/Deba'] }
   ]
 };
 

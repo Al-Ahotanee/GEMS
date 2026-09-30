@@ -199,13 +199,14 @@ export const dashboardApi = {
   getTimeline(params?: ApiParams) { return api.get('/dashboard/timeline', { params }); },
 };
 
-// ==================== PUBLIC API ====================
+// ============ PUBLIC API ============
 
 export const publicApi = {
-  getSituationRoom() { return api.get('/public/situation-room'); },
-  getSituationRoomLGA(lgaId: number) { return api.get(`/public/situation-room/lga/${lgaId}`); },
-  getSituationRoomWard(wardId: number) { return api.get(`/public/situation-room/ward/${wardId}`); },
+  getSituationRoom(params?: ApiParams) { return api.get('/public/situation-room', { params }); },
+  getSituationRoomLGA(lgaId: number, params?: ApiParams) { return api.get(`/public/situation-room/lga/${lgaId}`, { params }); },
+  getSituationRoomWard(wardId: number, params?: ApiParams) { return api.get(`/public/situation-room/ward/${wardId}`, { params }); },
   getEmbedData(electionId: number) { return api.get(`/public/embed/${electionId}`); },
+  getMerkleLedger(params?: ApiParams) { return api.get('/public/merkle-ledger', { params }); },
 };
 
 // ==================== DISPUTE API ====================

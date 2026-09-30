@@ -64,37 +64,139 @@ async function seed() {
       }
     }
 
-    const election = await firstValue(
-      `INSERT INTO elections (title, election_type, election_date, election_year, status, state, description)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT DO NOTHING
-       RETURNING id`,
-      [
-        '2027 Gombe State Gubernatorial Election',
-        'gubernatorial',
-        '2027-03-06',
-        2027,
-        'ongoing',
-        'Gombe',
-        'The 2027 Gombe State Gubernatorial Election to elect the next Governor of Gombe State, Nigeria.',
-      ],
-    );
-    const electionId = election?.id || (await firstValue("SELECT id FROM elections WHERE title LIKE '%2027%' ORDER BY id LIMIT 1")).id;
-
-    const candidates = [
-      { full_name: 'Prof. Ibrahim Isa Pantami', party_code: 'PDP', party_name: 'Peoples Democratic Party', position: 1 },
-      { full_name: 'Muhammadu Inuwa Yahaya', party_code: 'APC', party_name: 'All Progressives Congress', position: 2 },
-      { full_name: 'Abubakar Mohammed Garba', party_code: 'NNPP', party_name: 'New Nigeria Peoples Party', position: 3 },
-      { full_name: 'Ibrahim Alkali', party_code: 'LP', party_name: 'Labour Party', position: 4 },
+    // 4. Seed Multiple Elections
+    const electionsToSeed = [
+      {
+        title: '2027 Gombe State Gubernatorial Election',
+        election_type: 'gubernatorial',
+        constituency_type: 'statewide',
+        constituency_name: 'Statewide (All 11 LGAs)',
+        election_date: '2027-03-06',
+        election_year: 2027,
+        status: 'ongoing',
+        state: 'Gombe',
+        description: 'Statewide Gubernatorial contest to elect the Executive Governor of Gombe State.',
+        candidates: [
+          { full_name: 'Prof. Ibrahim Isa Pantami', party_code: 'PDP', party_name: 'Peoples Democratic Party', position: 1 },
+          { full_name: 'Muhammadu Inuwa Yahaya', party_code: 'APC', party_name: 'All Progressives Congress', position: 2 },
+          { full_name: 'Abubakar Mohammed Garba', party_code: 'NNPP', party_name: 'New Nigeria Peoples Party', position: 3 },
+          { full_name: 'Ibrahim Alkali', party_code: 'LP', party_name: 'Labour Party', position: 4 },
+        ]
+      },
+      {
+        title: '2027 Gombe North Senatorial Election',
+        election_type: 'senatorial',
+        constituency_type: 'senatorial',
+        constituency_name: 'Gombe North',
+        election_date: '2027-02-20',
+        election_year: 2027,
+        status: 'ongoing',
+        state: 'Gombe',
+        description: 'Senatorial contest for Gombe North (Dukku, Funakaye, Gombe, Kwami, Nafada).',
+        candidates: [
+          { full_name: 'Sa\'idu Ahmed Alkali', party_code: 'APC', party_name: 'All Progressives Congress', position: 1 },
+          { full_name: 'Ibrahim Dankwambo', party_code: 'PDP', party_name: 'Peoples Democratic Party', position: 2 },
+          { full_name: 'Abdullahi Bello', party_code: 'NNPP', party_name: 'New Nigeria Peoples Party', position: 3 },
+        ]
+      },
+      {
+        title: '2027 Gombe Central Senatorial Election',
+        election_type: 'senatorial',
+        constituency_type: 'senatorial',
+        constituency_name: 'Gombe Central',
+        election_date: '2027-02-20',
+        election_year: 2027,
+        status: 'ongoing',
+        state: 'Gombe',
+        description: 'Senatorial contest for Gombe Central (Akko, Yamaltu/Deba).',
+        candidates: [
+          { full_name: 'Muhammad Danjuma Goje', party_code: 'APC', party_name: 'All Progressives Congress', position: 1 },
+          { full_name: 'Aliyu Abubakar', party_code: 'PDP', party_name: 'Peoples Democratic Party', position: 2 },
+        ]
+      },
+      {
+        title: '2027 Gombe South Senatorial Election',
+        election_type: 'senatorial',
+        constituency_type: 'senatorial',
+        constituency_name: 'Gombe South',
+        election_date: '2027-02-20',
+        election_year: 2027,
+        status: 'ongoing',
+        state: 'Gombe',
+        description: 'Senatorial contest for Gombe South (Balanga, Billiri, Kaltungo, Shongom).',
+        candidates: [
+          { full_name: 'Anthony Siyako Yaro', party_code: 'PDP', party_name: 'Peoples Democratic Party', position: 1 },
+          { full_name: 'Joshua Lidani', party_code: 'APC', party_name: 'All Progressives Congress', position: 2 },
+        ]
+      },
+      {
+        title: '2027 Gombe / Kwami / Funakaye Federal Constituency Election',
+        election_type: 'house_of_representatives',
+        constituency_type: 'federal_constituency',
+        constituency_name: 'Gombe / Kwami / Funakaye',
+        election_date: '2027-02-20',
+        election_year: 2027,
+        status: 'ongoing',
+        state: 'Gombe',
+        description: 'Federal House of Representatives election for Gombe / Kwami / Funakaye Federal Constituency.',
+        candidates: [
+          { full_name: 'Yaya Bauchi Tongo', party_code: 'PDP', party_name: 'Peoples Democratic Party', position: 1 },
+          { full_name: 'Abubakar Haruna', party_code: 'APC', party_name: 'All Progressives Congress', position: 2 },
+        ]
+      },
+      {
+        title: '2027 Akko Federal Constituency Election',
+        election_type: 'house_of_representatives',
+        constituency_type: 'federal_constituency',
+        constituency_name: 'Akko',
+        election_date: '2027-02-20',
+        election_year: 2027,
+        status: 'ongoing',
+        state: 'Gombe',
+        description: 'Federal House of Representatives election for Akko Federal Constituency.',
+        candidates: [
+          { full_name: 'Ali Isa JC', party_code: 'PDP', party_name: 'Peoples Democratic Party', position: 1 },
+          { full_name: 'Umaru Bello', party_code: 'APC', party_name: 'All Progressives Congress', position: 2 },
+        ]
+      },
+      {
+        title: '2027 Gombe Central State Assembly Election',
+        election_type: 'state_assembly',
+        constituency_type: 'state_assembly',
+        constituency_name: 'Gombe',
+        election_date: '2027-03-06',
+        election_year: 2027,
+        status: 'ongoing',
+        state: 'Gombe',
+        description: 'Gombe State House of Assembly constituency election for Gombe.',
+        candidates: [
+          { full_name: 'Ahmed Usman', party_code: 'APC', party_name: 'All Progressives Congress', position: 1 },
+          { full_name: 'Suleiman Mohammed', party_code: 'PDP', party_name: 'Peoples Democratic Party', position: 2 },
+        ]
+      }
     ];
-    for (const candidate of candidates) {
-      await pool.query(
-        `INSERT INTO candidates (election_id, full_name, party_code, party_name, position)
-         VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT (election_id, party_code) DO UPDATE SET full_name = EXCLUDED.full_name, party_name = EXCLUDED.party_name, position = EXCLUDED.position`,
-        [electionId, candidate.full_name, candidate.party_code, candidate.party_name, candidate.position],
+
+    for (const el of electionsToSeed) {
+      const electionRow = await firstValue(
+        `INSERT INTO elections (title, election_type, election_date, election_year, status, state, description, constituency_type, constituency_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT DO NOTHING
+         RETURNING id`,
+        [el.title, el.election_type, el.election_date, el.election_year, el.status, el.state, el.description, el.constituency_type, el.constituency_name],
       );
+      const elId = electionRow?.id || (await firstValue('SELECT id FROM elections WHERE title = ?', [el.title]))?.id;
+      if (!elId) continue;
+
+      for (const cand of el.candidates) {
+        await pool.query(
+          `INSERT INTO candidates (election_id, full_name, party_code, party_name, position)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT (election_id, party_code) DO UPDATE SET full_name = EXCLUDED.full_name, party_name = EXCLUDED.party_name, position = EXCLUDED.position`,
+          [elId, cand.full_name, cand.party_code, cand.party_name, cand.position],
+        );
+      }
     }
+    console.log(`Seeded ${electionsToSeed.length} Elections with all registered Candidates.`);
 
     const passwordHashes = {
       admin: await bcrypt.hash('Admin@GSEM2024!', 12),

@@ -94,6 +94,8 @@ const schema = [
     election_year INTEGER,
     status VARCHAR(16) NOT NULL DEFAULT 'upcoming',
     state VARCHAR(50) NOT NULL DEFAULT 'Gombe',
+    constituency_type VARCHAR(40) NOT NULL DEFAULT 'statewide',
+    constituency_name VARCHAR(100),
     description TEXT,
     created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -309,6 +311,8 @@ const indexes = [
 const compatibility = [
   'ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS details JSONB',
   'ALTER TABLE elections ADD COLUMN IF NOT EXISTS election_year INTEGER',
+  'ALTER TABLE elections ADD COLUMN IF NOT EXISTS constituency_type VARCHAR(40) NOT NULL DEFAULT \'statewide\'',
+  'ALTER TABLE elections ADD COLUMN IF NOT EXISTS constituency_name VARCHAR(100)',
   'ALTER TABLE candidates ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()',
   'ALTER TABLE result_submissions ADD COLUMN IF NOT EXISTS flag_reason TEXT',
   'ALTER TABLE result_submissions ADD COLUMN IF NOT EXISTS flagged_by INTEGER REFERENCES users(id) ON DELETE SET NULL',

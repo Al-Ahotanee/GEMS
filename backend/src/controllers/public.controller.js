@@ -1,21 +1,55 @@
 const { pool, cache } = require('../config/database');
 const ApiResponse = require('../utils/response');
 const logger = require('../utils/logger');
+const GOMBE_GEO = require('../data/gombe-geo');
+const { buildMerkleTree, sha256 } = require('../utils/merkle');
+
+function getConstituencyLgas(election) {
+  if (!election || election.constituency_type === 'statewide') return null;
+  if (election.constituency_type === 'senatorial') {
+    const dist = (GOMBE_GEO.senatorialDistricts || []).find(d => d.name === election.constituency_name);
+    return dist ? new Set(dist.lgas) : null;
+  }
+  if (election.constituency_type === 'federal_constituency') {
+    const fed = (GOMBE_GEO.federalConstituencies || []).find(f => f.name === election.constituency_name);
+    return fed ? new Set(fed.lgas) : null;
+  }
+  if (election.constituency_type === 'state_assembly') {
+    const lga = (GOMBE_GEO.lgas || []).find(l => l.name === election.constituency_name);
+    return lga ? new Set([lga.name]) : null;
+  }
+  return null;
+}
 
 // Public Situation Room — NO AUTH required
 const getSituationRoom = async (req, res) => {
   try {
-    const cacheKey = 'situation_room';
+    const requestedElectionId = req.query.election_id ? parseInt(req.query.election_id) : null;
+    const cacheKey = requestedElectionId ? `situation_room_${requestedElectionId}` : 'situation_room_default';
     const cached = cache.get(cacheKey);
     if (cached) return ApiResponse.success(res, cached);
 
-    let [elections] = await pool.query("SELECT id, title, election_date, status FROM elections WHERE status = 'ongoing' LIMIT 1");
-    if (!elections.length) {
-      const [latest] = await pool.query('SELECT id, title, election_date, status FROM elections ORDER BY election_date DESC LIMIT 1');
-      if (!latest.length) return ApiResponse.notFound(res, 'No election found');
-      elections.push(latest[0]);
+    let election = null;
+    if (requestedElectionId) {
+      const [found] = await pool.query('SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections WHERE id = ?', [requestedElectionId]);
+      if (found.length) election = found[0];
     }
-    const election = elections[0];
+    if (!election) {
+      let [elections] = await pool.query("SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections WHERE status = 'ongoing' ORDER BY id ASC LIMIT 1");
+      if (!elections.length) {
+        const [latest] = await pool.query('SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections ORDER BY election_date DESC LIMIT 1');
+        if (!latest.length) return ApiResponse.notFound(res, 'No election found');
+        election = latest[0];
+      } else {
+        election = elections[0];
+      }
+    }
+
+    const [availableElections] = await pool.query(
+      "SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections ORDER BY id ASC"
+    );
+
+    const constituencyLgas = getConstituencyLgas(election);
 
     const [puStats] = await pool.query('SELECT COUNT(*) as total FROM polling_units');
     const [reportedStats] = await pool.query(
@@ -137,6 +171,7 @@ const getSituationRoom = async (req, res) => {
 
     const data = {
       election,
+      available_elections: availableElections,
       candidates: candidateResults,
       total_lgas: totalLGAs,
       reported_lgas: reportedLGAs,
@@ -181,13 +216,22 @@ const getSituationRoomLGA = async (req, res) => {
     if (!lgas.length) return ApiResponse.notFound(res, 'LGA not found');
     const lga = lgas[0];
 
-    let [elections] = await pool.query("SELECT id, title, election_date, status FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1");
-    if (!elections.length) {
-      const [latest] = await pool.query('SELECT id, title, election_date, status FROM elections ORDER BY election_date DESC LIMIT 1');
-      elections = latest;
+    const requestedElectionId = req.query.election_id ? parseInt(req.query.election_id) : null;
+    let election = null;
+    if (requestedElectionId) {
+      const [found] = await pool.query('SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections WHERE id = ?', [requestedElectionId]);
+      if (found.length) election = found[0];
     }
-    if (!elections.length) return ApiResponse.notFound(res, 'No election found');
-    const election = elections[0];
+    if (!election) {
+      let [elections] = await pool.query("SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1");
+      if (!elections.length) {
+        const [latest] = await pool.query('SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections ORDER BY election_date DESC LIMIT 1');
+        if (!latest.length) return ApiResponse.notFound(res, 'No election found');
+        election = latest[0];
+      } else {
+        election = elections[0];
+      }
+    }
 
     // LGA Top-Level Totals
     const [lgaRegVoters] = await pool.query(
@@ -359,13 +403,22 @@ const getSituationRoomWard = async (req, res) => {
     if (!wards.length) return ApiResponse.notFound(res, 'Ward not found');
     const ward = wards[0];
 
-    let [elections] = await pool.query("SELECT id, title, election_date, status FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1");
-    if (!elections.length) {
-      const [latest] = await pool.query('SELECT id, title, election_date, status FROM elections ORDER BY election_date DESC LIMIT 1');
-      elections = latest;
+    const requestedElectionId = req.query.election_id ? parseInt(req.query.election_id) : null;
+    let election = null;
+    if (requestedElectionId) {
+      const [found] = await pool.query('SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections WHERE id = ?', [requestedElectionId]);
+      if (found.length) election = found[0];
     }
-    if (!elections.length) return ApiResponse.notFound(res, 'No election found');
-    const election = elections[0];
+    if (!election) {
+      let [elections] = await pool.query("SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections WHERE status = 'ongoing' ORDER BY election_date DESC LIMIT 1");
+      if (!elections.length) {
+        const [latest] = await pool.query('SELECT id, title, election_type, constituency_type, constituency_name, election_date, status FROM elections ORDER BY election_date DESC LIMIT 1');
+        if (!latest.length) return ApiResponse.notFound(res, 'No election found');
+        election = latest[0];
+      } else {
+        election = elections[0];
+      }
+    }
 
     // Ward Registered Voters
     const [wardReg] = await pool.query(
@@ -542,4 +595,57 @@ const getEmbedData = async (req, res) => {
   }
 };
 
-module.exports = { getSituationRoom, getSituationRoomLGA, getSituationRoomWard, getEmbedData };
+const getMerkleLedger = async (req, res) => {
+  try {
+    const { election_id } = req.query;
+    let targetElectionId = election_id ? parseInt(election_id) : null;
+
+    if (!targetElectionId) {
+      const [elections] = await pool.query(
+        "SELECT id FROM elections WHERE status = 'ongoing' ORDER BY id ASC LIMIT 1"
+      );
+      if (elections.length) {
+        targetElectionId = elections[0].id;
+      } else {
+        const [latest] = await pool.query(
+          "SELECT id FROM elections ORDER BY election_date DESC LIMIT 1"
+        );
+        if (latest.length) targetElectionId = latest[0].id;
+      }
+    }
+
+    if (!targetElectionId) {
+      return ApiResponse.notFound(res, 'No election found for Merkle ledger');
+    }
+
+    const [submissions] = await pool.query(
+      `SELECT id, submission_uid, content_hash, digital_signature, status, created_at
+       FROM result_submissions
+       WHERE election_id = ? AND status = 'verified'
+       ORDER BY created_at ASC`,
+      [targetElectionId]
+    );
+
+    const leaves = submissions.map(s => s.digital_signature || s.content_hash || sha256(s.submission_uid));
+    const tree = buildMerkleTree(leaves);
+
+    return ApiResponse.success(res, {
+      election_id: targetElectionId,
+      total_verified_submissions: submissions.length,
+      merkle_root: tree.root,
+      tree_height: tree.treeHeight,
+      last_block_timestamp: submissions.length ? submissions[submissions.length - 1].created_at : new Date().toISOString(),
+      recent_hashes: submissions.slice(-10).map(s => ({
+        submission_uid: s.submission_uid,
+        hash: s.digital_signature || s.content_hash,
+        timestamp: s.created_at,
+      })),
+    }, 'Merkle audit ledger generated');
+  } catch (error) {
+    logger.error('Merkle ledger error:', error);
+    return ApiResponse.error(res, 'Failed to generate Merkle ledger');
+  }
+};
+
+module.exports = { getSituationRoom, getSituationRoomLGA, getSituationRoomWard, getEmbedData, getMerkleLedger };
+

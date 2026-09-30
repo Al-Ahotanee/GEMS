@@ -68,7 +68,7 @@ router.put('/elections/:electionId/candidates/:id', authenticate, authorize('sup
 router.delete('/elections/:electionId/candidates/:id', authenticate, authorize('super_admin'), auditLog('delete', 'candidate'), electionController.deleteCandidate);
 
 // ============ RESULT ROUTES ============
-router.post('/results', authenticate, authorize('pu_agent'), uploadResultImages, auditLog('submit', 'result'), resultsController.submitResult);
+router.post('/results', authenticate, authorize('pu_agent', 'super_admin'), uploadResultImages, auditLog('submit', 'result'), resultsController.submitResult);
 router.get('/results', authenticate, resultsController.listResults);
 router.get('/results/:id', authenticate, resultsController.getResult);
 router.put('/results/:id/verify', authenticate, authorize('ward_officer', 'lga_coordinator', 'state_coordinator', 'super_admin'), auditLog('verify', 'result'), resultsController.verifyResult);
@@ -93,6 +93,7 @@ router.get('/public/situation-room', publicController.getSituationRoom);
 router.get('/public/situation-room/lga/:id', publicController.getSituationRoomLGA);
 router.get('/public/situation-room/ward/:id', publicController.getSituationRoomWard);
 router.get('/public/embed/:electionId', publicController.getEmbedData);
+router.get('/public/merkle-ledger', publicController.getMerkleLedger);
 
 // ============ DISPUTE ROUTES ============
 router.post('/disputes', authenticate, auditLog('create', 'dispute'), disputesController.raiseDispute);

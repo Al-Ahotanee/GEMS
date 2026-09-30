@@ -50,6 +50,7 @@
   .table-cell { @apply py-4 px-4 text-sm text-text-secondary border-t border-dark-border; }
   .badge { @apply inline-flex items-center px-2.5 py-1 rounded-full text-[.65rem] font-extrabold uppercase tracking-[.08em]; }
   .badge-success { @apply badge bg-accent-50 text-accent-700 border border-accent-200; }
+  .badge-gombe { @apply badge bg-emerald-50 text-emerald-800 border border-emerald-200; }
   .badge-warning { @apply badge bg-yellow-50 text-yellow-800 border border-yellow-200; }
   .badge-danger { @apply badge bg-red-50 text-red-700 border border-red-200; }
   .badge-info { @apply badge bg-primary-50 text-primary-700 border border-primary-200; }
