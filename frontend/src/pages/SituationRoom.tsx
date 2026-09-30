@@ -22,6 +22,7 @@ import {
   CandidateResult, LGADashboardSummary, WardDashboardSummary,
   SituationRoomPUDetail
 } from '../types';
+import { getLightTileConfig } from '../utils/mapTiles';
 
 const COLORS = ['#10b981', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -128,6 +129,7 @@ export default function SituationRoomPage() {
   const [showResultCardModal, setShowResultCardModal] = useState(false);
   const [mediaWallIndex, setMediaWallIndex] = useState(0);
   const [copiedMerkle, setCopiedMerkle] = useState(false);
+  const lightTileConfig = getLightTileConfig();
 
   // Cryptographic Merkle Audit Ledger Query
   const { data: merkleData, refetch: refetchMerkle, isFetching: isMerkleLoading } = useQuery({
@@ -1188,17 +1190,12 @@ export default function SituationRoomPage() {
                     <MapContainer center={[10.2897, 11.1711]} zoom={9} style={{ height: '100%', width: '100%', background: '#e8eff5' }} zoomControl={false}>
                       <MapController selectedLgaCoords={activeLgaCoords} />
                       <TileLayer
-                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                        attribution="&copy; CARTO"
+                        url={lightTileConfig.url}
+                        attribution={lightTileConfig.attribution}
+                        maxZoom={lightTileConfig.maxZoom}
                       />
                       {room.lga_breakdown?.map((lga: LGADashboardSummary) => {
-                        const coords: Record<string, [number, number]> = {
-                          'Akko': [10.2744, 11.0254], 'Balanga': [9.7909, 11.6669], 'Billiri': [9.8659, 11.2227],
-                          'Dutse': [11.7562, 9.3390], 'Hadejia': [12.45, 10.04], 'Birnin Kudu': [11.45, 9.48],
-                          'Kaltungo': [9.8142, 11.3069], 'Kwami': [10.4566, 11.2384], 'Nafada': [11.0945, 11.3323],
-                          'Shongom': [9.7118, 11.2227], 'Yamaltu/Deba': [10.2173, 11.4927]
-                        };
-                        const c = coords[lga.lga_name];
+                        const c = GOMBE_LGA_COORDS[lga.lga_name];
                         if (!c) return null;
 
                         const lgaLeader = lga.candidates && lga.candidates.length > 0

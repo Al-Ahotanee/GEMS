@@ -68,6 +68,12 @@
 .leaflet-popup-tip { background: #fff !important; }
 .leaflet-control-zoom a { background: #fff !important; color: #31598a !important; border-color: #d8e1e2 !important; }
 
+/* Inverted dark theme filter for OpenStreetMap tiles when no CARTO API key is provided */
+.map-tiles-dark,
+.leaflet-tile.map-tiles-dark {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) !important;
+}
+
 @media print {
   body { background:#fff !important; color:#000 !important; }
   .no-print { display:none !important; }

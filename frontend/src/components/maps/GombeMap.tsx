@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 're
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Anomaly } from '../../types';
+import { getDarkTileConfig } from '../../utils/mapTiles';
 
 // Fix for default marker icons in Leaflet with bundlers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -43,6 +44,8 @@ export default function GombeMap({ anomalies, onSelectAnomaly }: GombeMapProps) 
     }
   };
 
+  const tileConfig = getDarkTileConfig();
+
   return (
     <div className="h-full w-full relative rounded-xl overflow-hidden shadow-lg border border-dark-border">
       <MapContainer 
@@ -54,8 +57,10 @@ export default function GombeMap({ anomalies, onSelectAnomaly }: GombeMapProps) 
         <ChangeView center={activeCenter} zoom={activeZoom} />
         
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution={tileConfig.attribution}
+          url={tileConfig.url}
+          className={tileConfig.className}
+          maxZoom={tileConfig.maxZoom}
         />
 
         {anomalies.map((anomaly, idx) => {
